@@ -1,0 +1,61 @@
+#!./pvcheck
+
+#######################################################################
+# ESEMPIO CON TEST MULTIPLI
+#######################################################################
+
+# Ciascun test viene introdotto dalla sezione speciale [.TEST].
+# Tipicamente, ciascun test avra` input e output diversi.  Gli output
+# sono definiti tramite sezioni ordinarie.  L'input puo` essere
+# specificato:
+#
+# - tramite la sezione speciale [.INPUT] che consente di indicare del
+#   testo che viene poi inviato sullo standard input del programma;
+#
+# - tramite la sezione speciale [.ARGS] che consente di indicare
+#   argomenti aggiuntivi da passare al programma tramite la riga di
+#   comando (un argomento per ciascuna riga nella sezione.
+
+# Le parti in comune tra i test della suite (ad esempio opzioni
+# specificate tramite la sezione speciale [.SECTIONS]) possono essere
+# indicate prima della prima sezione [.TEST].  In questo modo verranno
+# replicate in tutti i test.
+
+# In questo esempio il programma legge un intero dallo standard input
+# e ne calcola il fattoriale.
+
+############################################################
+
+[.TEST]
+Fattoriale di zero
+# La prima riga della sezione definisce opzionalmente il nome del test.
+
+[.INPUT]
+0
+
+[FACTORIAL]
+1
+
+############################################################
+
+[.TEST]
+Fattoriale di uno
+
+[.INPUT]
+1
+
+[FACTORIAL]
+1
+
+############################################################
+
+[.TEST]
+Fattoriale di cinque
+
+[.INPUT]
+5
+
+[FACTORIAL]
+120
+
+############################################################

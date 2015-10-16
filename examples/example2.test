@@ -1,0 +1,59 @@
+#!./pvcheck
+
+#######################################################################
+# EXAMPLE WITH MULTIPLE TEST CASES
+#######################################################################
+
+# Each test is introduced by the special section [.TEST].  Usually,
+# each test has different inputs and outputs.  Outputs are defined by
+# ordinary sections.  The input can be specified:
+#
+# - with the special section [.INPUT] that allows to specify text to
+#   be sent to the program via its standard input;
+#
+# - with the special section [.ARGS] that allow to specify additional
+#   arguments to be passed with the command line (one extra argument
+#   per line).
+
+# Common parts among all the test cases (for instance options in the
+# [.SECTIONS] special section) can be specified before the first
+# [.TEST] section.  They will be prepended to all the tests.
+
+# In this example the program is supposed to read an integer from the
+# standard input, anf to write its factorial.
+
+############################################################
+
+[.TEST]
+Factorial of zero
+# The first line of the section identify the test
+
+[.INPUT]
+0
+
+[FACTORIAL]
+1
+
+############################################################
+
+[.TEST]
+Factorial of one
+
+[.INPUT]
+1
+
+[FACTORIAL]
+1
+
+############################################################
+
+[.TEST]
+Factorial of five
+
+[.INPUT]
+5
+
+[FACTORIAL]
+120
+
+############################################################

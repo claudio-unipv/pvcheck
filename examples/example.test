@@ -1,0 +1,51 @@
+#!./pvcheck
+
+# La The first line it is not needed.  It allows to execute the test
+# as if it is a script.
+
+#######################################################################
+# SIMPLE EXAMPLE (SINGLE TEST)
+#######################################################################
+
+
+# Tests are divided in sections with names between square brackets.
+
+# Empty lines, and lines starting with '#' are ignored.
+
+# Non-empty lines are compared against those produced by the program
+# in the corresponding section.
+
+
+[AAA]
+# For integer numbers the valu is compared (05, +5 and 5 are
+# equivalent).
+1 2 3
+4 05 +6
+
+[BBB]
+# For number with a fractional part, before the comparison the values
+# produced by the program are rounded to the same number of fractional
+# digits used in the definition of the test (two digits in the
+# examples here below).
+3.14
+6.28
+
+[CCC]
+# In all the other cases the words composing the non-empty lines are
+# compared.
+abc
+def
+
+
+# The sepcial section ".SECTIONS" allows to specify additional options
+# for the sections.  For instance, the following line indicates that
+# the order of the lines in the DDD section is not relevant.  Usually
+# options are declared at the beginning of the test file, or in a
+# separate configuration file.
+
+[.SECTIONS]
+DDD unordered
+
+[DDD]
+one two three
+four five

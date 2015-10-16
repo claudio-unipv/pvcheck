@@ -1,0 +1,708 @@
+#!/usr/bin/env python3
+
+# TODO:
+# - sommario
+# - output json (?)
+# - localizzazione ITA/ENG (?)
+# - verbosita`
+# - qualche commento in piu` (sezione output)
+# - supporto per valgrind
+
+__doc__ = """Run tests to check the correctness of a program.
+
+Options:
+  -v, --verbosity=L  set the verbosity level, where the level must be
+                     an integer between 0 (minimum) and 3 (maximum).
+                     The default value is 2.
+  -t, --timeout=T    set how many seconds it should be waited for the
+                     termination of the program.  The default is 10
+                     seconds. 
+  -c, --config=FILE  uses the specified configuration file.
+  -h, --help         print this message and exit.
+"""
+
+USAGE_en = ("Usage: pvcheck [OPTIONS]... TEST_FILE EXECUTABLE " +
+            "[EXECUTABLE_PARAMS]...")
+HELP_en = __doc__
+
+
+USAGE_it = ("Utilizzo: pvcheck [OPZIONI...] " +
+            "FILE_OUTPUT_ATTESO FILE_ESEGUIBILE " +
+            "[PARAMETRI_ESEGUIBILE]...")
+HELP_it = """Esegue dei test per verificare la correttezza di un programma.
+
+Opzioni:
+  -v, --verbosity=L  imposto il livello di verbosita`.  Il livello deve
+                     essere un valore intero tra 0 (minimo) e 3
+                     (massimo).  Il default e` 2.
+  -t, --timeout=T    imposta per quanti secondi bisogna attendere
+                     la terminazione del programma.  Il default e` pari
+                     a 10 secondi.
+  -c, --config=FILE  utilizza il file di configurazione specificato.
+  -h, --help         stampa questo messaggio ed esce.
+"""
+
+import subprocess
+import signal
+import os
+import sys
+import getopt
+import re
+from itertools import count
+from collections import OrderedDict
+from functools import wraps
+
+
+############################################################
+# INTERNATIONALIZATION
+############################################################
+
+# Internationalization is very basic.  It is self-contained so that
+# external files are not needed.  In the future it would be easily
+# replaced by gettext since translatable strings are marked in the
+# same way as _("text").
+
+_strings = {}
+_missing_translation = set()
+_lang = 'en'
+_translations = {
+    'it': {
+        USAGE_en: USAGE_it,
+        HELP_en: HELP_it,
+        "ERROR": "ERRORE",
+        "OK": "OK",
+        "WARNING!": "ATTENZIONE!",
+        "COMMAND LINE": "RIGA DI COMANDO",
+        "INPUT": "INPUT",
+        "TEST": "TEST",
+        " line %d": " riga %d",
+        " (expected '%s'": " (atteso '%s'",
+        ", got '%s')": ", ottenuto '%s')",
+        " unexpected line '%s'": " riga inattesa '%s'",
+        "wrong number of lines (expected %d, got %d)": "numero di righe errato (atteso %d, ottenuto %d)",
+        "%s: line %d is wrong  (expected '%s', got '%s')": "%s: riga %d errata  (atteso '%s', ottenuto '%s')",
+        "The first %d lines matched correctly": "Le prime %d righe sono corrette",
+        "missing section": "sezione mancante",
+        "empty section": "sezione vuota",
+        "Invalid parameter ('%s')": "Parametro non valido ('%s')",
+        "TIMEOUT EXPIRED: PROCESS TERMINATED":"TEMPO LIMITE SCADUTO: PROCESSO TERMINATO",
+        "PROCESS ENDED WITH A FAILURE": "PROCESSO TERMINATO CON UN FALLIMENTO",
+        "(SEGMENTATION FAULT)": "(SEGMENTATION FAULT)",
+        "(ERROR CODE %d)": "(CODICE D'ERRORE %d)",
+        "FAILED TO RUN THE FILE '%s' ": "IMPOSSIBILE ESEGUIRE IL FILE '%s' ",
+        "(the file does not exist)": "(file inesistente)"
+    }
+}
+def _(text):
+    try:
+        return _strings[text]
+    except KeyError:
+        _missing_translation.add(text)
+        s = (text if len (text) < 15 else text[:15] + "...")
+        print("[TT] Warning: missing translation for '%s'" % s)
+        return text
+
+def _install_lang():
+    global _lang
+    global _strings
+    _lang = os.environ.get('LANG', 'en').partition('_')[0]
+    try:
+        _strings = _translations[_lang]
+    except KeyError:
+        # Fallback to english, where the translation is the identity
+        # function.
+        _lang = 'en'
+        for t in _translations.values():
+            _strings = dict((k, k) for k in t)
+            break
+
+_install_lang()
+import atexit
+@atexit.register
+def _save_missing_translations():
+    if _missing_translation:
+        import pprint
+        with open('missing_translations.txt', 'wt') as f:
+            d = dict.fromkeys(_missing_translation, "")
+            pprint.pprint({_lang:d}, stream=f)
+
+
+############################################################
+# FORMATTED OUTPUT
+############################################################
+
+class ResultType:
+    """Possible results for individual and combined tests."""
+    SUCCESS = 0
+    WARNING = 1
+    ERROR = 2
+    FATAL = 3
+
+    _TXT = [_(s) for s in "OK WARNING! ERROR ERROR".split()]
+
+    @staticmethod
+    def tostr(i):
+        """String representation of an error type."""
+        return ResultType._TXT[i]
+
+
+class SimpleOutput:
+    """Base class for reporting the results.
+
+    This class just output the results as plain text.
+    Subclasses may produce fancier output.
+    """
+    def __init__(self, dst):
+        """Set the file-like destination of the output."""
+        self._dst = dst
+        self._cursection = None
+
+    def open_suite(self):
+        """Print a header for the whole test suite."""
+        pass
+
+    def close_suite(self):
+        """Print a trailer for the whole test suite."""
+        pass
+
+    def open_test(self, testname, cmdline, input_text="",
+                  error_message=None):
+        """Print a header for an individual test in a suite.
+
+        The error message must be specified only if the test failed
+        without any output to verify.
+
+        """
+        if testname is not None:
+            self._dst.write(_("TEST") + ": " + testname + "\n")
+        self._dst.write(_("COMMAND LINE") + ": " + " ".join(cmdline) + "\n")
+        if input_text != "":
+            self._dst.write(_("INPUT") +":\n" + input_text.rstrip() + "\n")
+        if error_message is not None:
+            print(error_message)
+
+    def close_test(self):
+        """Print a trailer for an individual test in a suite."""
+        pass
+
+    def open_section(self, sectname):
+        """Print a header for a section in a test."""
+        self._cursection = sectname
+
+    def close_section(self, result_type, message=None):
+        """Print a trailer for a section in a test."""
+        if result_type != ResultType.ERROR:
+            # Errors are already reported by the result_type method
+            msg = self._cursection + ": "
+            if message is None:
+                msg += ResultType.tostr(result_type)
+            else:
+                msg += message.strip()
+            self._dst.write(msg + "\n")
+        self._cursection = None
+
+    def result(self, result_type, lineno, expected, got, message):
+        """Report a result for an element of a section.
+
+        Typically, only errors are reported with this function.
+
+        """
+        msg = self._cursection + ":"
+        if lineno is not None:
+            msg += _(" line %d") % lineno
+        if expected is not None:
+            msg += _(" (expected '%s'") % expected.strip()
+            if got is not None:
+                msg += _(", got '%s')") % got.strip()
+            else:
+                msg += ")"
+        elif got is not None:
+            msg += _(" unexpected line '%s'") % got.strip()
+        msg += " " + message.strip() + "\n"
+        self._dst.write(msg)
+
+
+class AnsiColor:
+    """Helper context manager for style output on the terminal."""
+    
+    # Escape codes
+    BLUE = '\033[94m'
+    DARK_BLUE = '\033[34m'
+    YELLOW = '\033[93m'
+    GREEN = '\033[92m'
+    DARK_GREEN = '\033[92m'
+    RED = '\033[91m'
+    DARK_RED = '\033[91m'
+    GRAY = '\033[97m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    INVERSE = '\033[7m'
+    UNDERLINE = '\033[4m'
+
+    def __init__(self, f, style):
+        self._f = f
+        self._style = style
+
+    def __enter__(self):
+        """Actually set the style."""
+        if self._style is not None:
+            self._f.write(self._style)
+
+    def __exit__(self, type, value, traceback):
+        """Restore a plain style."""
+        if self._style is not None:
+            self._f.write(AnsiColor.ENDC)
+
+
+class ColoredOutput(SimpleOutput):
+    """Report the results using colored text lines."""
+    
+    STYLES = {
+        ResultType.SUCCESS: (AnsiColor.GREEN + AnsiColor.BOLD),
+        ResultType.WARNING: (AnsiColor.YELLOW + AnsiColor.BOLD),
+        ResultType.ERROR: (AnsiColor.RED + AnsiColor.BOLD),
+        ResultType.FATAL: (AnsiColor.RED + AnsiColor.BOLD +
+                           AnsiColor.UNDERLINE)
+    }
+
+    def __init__(self, dst):
+        SimpleOutput.__init__(self, dst)
+
+    def open_test(self, testname, cmdline, input_text="",
+                  error_message=None):
+        if error_message is not None:
+            error_message = (ColoredOutput.STYLES[ResultType.FATAL] +
+                             error_message + AnsiColor.ENDC)
+        SimpleOutput.open_test(self, testname, cmdline,
+                               input_text, error_message)
+
+    def close_section(self, result_type, message=None):
+        with AnsiColor(self._dst, ColoredOutput.STYLES[result_type]):
+            SimpleOutput.close_section(self, result_type, message)
+
+    def result(self, result_type, lineno, expected, got, message):
+        with AnsiColor(self._dst, ColoredOutput.STYLES[result_type]):
+            SimpleOutput.result(self, result_type, lineno,
+                                expected, got, message)
+
+
+if sys.stdout.isatty():
+    out = ColoredOutput(sys.stdout)
+else:
+    out = SimpleOutput(sys.stdout)
+
+
+class ColorPrinter:
+    # !!! ???
+    """Output colored messages."""
+
+    # Escape codes
+    BLUE = '\033[94m'
+    DARK_BLUE = '\033[34m'
+    YELLOW = '\033[93m'
+    GREEN = '\033[92m'
+    DARK_GREEN = '\033[92m'
+    RED = '\033[91m'
+    DARK_RED = '\033[91m'
+    GRAY = '\033[97m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    INVERSE = '\033[7m'
+    UNDERLINE = '\033[4m'
+
+    def __init__(self):
+        self._isatty = sys.stdout.isatty()
+        self.verbosity = 2
+
+    def print_message(self, color, *messages):
+        """Print the message(s) using the given color."""
+        if self._isatty:
+            print(color, sep="", end="")
+            print(*messages, end="")
+            print(ColorPrinter.ENDC)
+        else:
+            print(*messages)
+
+    def error(self, *messages):
+        self.print_message(self.RED + self.BOLD, *messages)
+
+    def fatal(self, *messages):
+        style = self.RED + self.BOLD + self.UNDERLINE
+        self.print_message(style, *messages)
+
+    def warning(self, *messages):
+        if self.verbosity > 0:
+            self.print_message(self.YELLOW + self.BOLD, *messages)
+
+    def success(self, *messages):
+        if self.verbosity > 1:
+            self.print_message(self.DARK_GREEN + self.BOLD, *messages)
+
+    def info(self, *messages):
+        if self.verbosity > 1:
+            self.print_message(*messages)
+
+    def detail(self, *messages):
+        if self.verbosity > 2:
+            self.print_message(*messages)
+
+
+
+############################################################
+# PARSING
+############################################################
+
+RE_INT = re.compile(r'(-|\+)?[0-9]+')
+RE_REAL = re.compile(r'(-|\+)?[0-9]+\.(?P<frac>[0-9]*)')
+RE_NUMBER = re.compile(r'(-|\+)?[0-9]+(\.[0-9]*)')
+
+
+def parse_results(f):
+    """Parse the lines in f and return the content divided in sections.
+
+    file -> [ (secname, [lines]) ]
+    """
+    ret = []
+    section = None
+    for line in f:
+        l = line.strip()
+        if not l or l[0] == '#':
+            continue  # Skip empty lines and comments
+        if l.startswith("[") and l.endswith("]"):
+            # A new section
+            section = l[1:-1].strip().upper()
+            ret.append((section, []))
+        elif section is not None:
+            ret[-1][1].append(line)
+    return ret
+
+
+def group_sections_by_name(sections, name):
+    """Return the content fo all sections with the given name.
+
+    [ (secname, [ lines]) ] -> [ lines ]
+    """
+    ret = []
+    for (secname, lines) in sections:
+        if secname == name:
+            ret.extend(lines)
+    return ret
+
+
+def interpret_section_flags(lines):
+    """Interpret the sequence lines as flags related to sections.
+
+    [ lines ] -> { secname: [flags] }
+    """
+    flags = {}
+    for line in lines:
+        toks = line.split()
+        if toks:
+            flags.setdefault(toks[0], []).extend(toks[1:])
+    return flags
+
+
+def split_tests(t):
+    """Split the sections in t into a sequence of multiple named tests.
+
+    Everything preceding the first test is replicated for each test.
+
+    [ (secname, [ line ]) ] -> [ (testname, [ (secname, [ line ]) ]) ]
+    """
+    def grouper(t):
+        testname = None
+        test = []
+        n = 0
+        for (secname, lines) in t:
+            if secname == '.TEST':
+                yield (testname, test)
+                n += 1
+                testname = (lines[0].strip() if lines
+                        else ("Test-%d" % n))
+                test = []
+            else:
+                test.append((secname, lines))
+        yield (testname, test)
+
+    it = iter(grouper(t))
+    pre = next(it)
+    ret = [(r[0], pre[1] + r[1]) for r in it]
+    if not ret:
+        ret = [pre]
+    return ret
+
+
+############################################################
+# MATCHING
+############################################################
+
+def check_element(r, t):
+    """Compare single elements."""
+    m = RE_REAL.fullmatch(t)
+    if m is not None:
+        # If the target is a fractional number, compare the result up
+        # to the given number of digits.
+        digits = len(m.group('frac'))
+        try:
+            return float(t) == round(float(r), digits)
+        except ValueError:
+            return False
+    elif RE_INT.fullmatch(t):
+        # If the target is an integer, compare by value so that 15,
+        # +15 and 015 are considered as equivalent.
+        try:
+            return int(t) == int(r)
+        except ValueError:
+            return False
+    else:
+        # In the general case just compare the strings.
+        return (r == t)
+
+
+def check_line(res, target):
+    """Compare the result line with the expected target."""
+    res_elements = res.split()
+    target_elements = target.split()
+    return (len(res_elements) == len(target_elements)
+            and all(map(check_element, res_elements, target_elements)))
+
+
+def check_lines(res, target):
+    """Compare the content of a section with the expected target.
+
+    [str],[str] -> [ (int, str, str) ]
+    """
+    diffs = []
+    for (i, line, target_line) in zip(count(), res, target):
+        if not check_line(line, target_line):
+            diffs.append((i, line.strip(), target_line.strip()))
+    return diffs
+
+
+def check_unordered(key, result, target):
+    """Compare the two sets of lines disregarding their order.
+
+    Print messages to show matches and mismatches.
+    """
+    err = False
+    if len(result) != len(target):
+        fmt = _("wrong number of lines (expected %d, got %d)")
+        out.result(ResultType.ERROR, None, None, None,
+                   fmt % (len(target), len(result)))
+        err = True
+    result = set(result)
+    for i, t in enumerate(target):
+        found = None
+        for r in result:
+            if check_line(r, t):
+                found = r
+                break
+        if found:
+            result.remove(found)
+        else:
+            out.result(ResultType.ERROR, None, t.strip(), None, "")
+            err = True
+    for r in result:
+        out.result(ResultType.ERROR, None, None, r.strip(), "")
+        err = True
+    return (ResultType.ERROR if err else ResultType.SUCCESS)
+
+
+def check_ordered(key, result, target):
+    """Line by line comparison of result and target.
+
+    Print messages to show matches and mismatches.
+    """
+    rescode = ResultType.SUCCESS
+    if len(result) != len(target):
+        fmt = _("wrong number of lines (expected %d, got %d)")
+        out.result(ResultType.ERROR, None, None, None,
+                   fmt % (len(target), len(result)))
+        rescode = ResultType.ERROR
+    mm = check_lines(result, target)
+    if len(mm) > 0:
+        fmt = _("%s: line %d is wrong  (expected '%s', got '%s')")
+        for (n, got, exp) in mm:
+            out.result(ResultType.ERROR, n+1, exp, got, "")
+        return ResultType.ERROR
+    else:
+        if len(result) > 0 and len(result) != len(target):
+            fmt = _("The first %d lines matched correctly")
+            out.result(ResultType.WARNING, None, None, None,
+                       fmt % min(len(result), len(target)))
+        return rescode
+
+
+def check_result(result, target, flags):
+    """Compare result against the target output.
+
+    Print messages to show matches and mismatches.
+    """
+
+    res = {}
+    for (name, content) in result:
+        res.setdefault(name, []).extend(content)
+
+    for (key, t) in target:
+        if key.startswith('.'):
+            continue  # skip special sessions
+        out.open_section(key)
+        try:
+            r = res[key]
+        except KeyError:
+            out.close_section(ResultType.WARNING, _("missing section"))
+            continue
+        if not r and t:
+            out.close_section(ResultType.ERROR, _("empty section"))
+            continue
+        if "unordered" in flags.get(key, ()):
+            result = check_unordered(key, r, t)
+        else:
+            result = check_ordered(key, r, t)
+        out.close_section(result, None)
+
+
+############################################################
+# DRIVER
+############################################################
+
+def parse_options():
+    """Parse the command line."""
+
+    shortopts = "hc:t:v:"
+    longopts = ["help", "config=", "verbosity=", "timeout="]
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
+    except getopt.GetoptError as err:
+        print(str(err))
+        print(_(USAGE_en))
+        sys.exit(2)
+    opts = dict(opts)
+
+    if '-h' in opts or '--help' in opts:
+        print(_(USAGE_en))
+        print()
+        print(_(HELP_en))
+        sys.exit(0)
+
+    if len(args) < 2:
+        print(_(USAGE_en))
+        sys.exit(2)
+
+    def optval(key1, key2, default=None, result_type=None):
+        x = opts.get(key1, opts.get(key2, default))
+        if result_type is None:
+            return x
+        try:
+            return result_type(x)
+        except ValueError as err:
+            print(_("Invalid parameter ('%s')") % x)
+            sys.exit(2)
+
+    verbosity = optval('-v', '--verbosity', '2', int)
+    if verbosity < 0 or verbosity > 3:
+        print(_("Invalid parameter ('%s')") % verbosity)
+        sys.exit(2)
+
+    timeout = optval('-t', '--timeout', '10', float)
+    if timeout < 0:
+        print(_("Invalid parameter ('%s')") % timeout)
+        sys.exit(2)
+
+    config = optval('-c', '--config', '', str)
+
+    opts = dict(config=config,
+                verbosity=verbosity,
+                timeout=timeout)
+
+    return (args, opts)
+
+
+def dotest(testname, target, args, opts):
+    """Execute the process and verify its output against target."""
+
+    try:
+        input_text = ("".join(group_sections_by_name(target, ".INPUT")))
+        input_bytes = input_text.encode('utf8')
+    except KeyError:
+        input_text = None
+
+    args = args[:]
+    args.extend(map(str.strip, group_sections_by_name(target, ".ARGS")))
+    flags = interpret_section_flags(group_sections_by_name(target, ".SECTIONS"))
+
+    # Execute the process and parse its output
+    error_message = None
+    try:
+        output = subprocess.check_output(args[1:],
+                                         input=input_bytes,
+                                         timeout=opts['timeout'])
+    except subprocess.TimeoutExpired as e:
+        error_message = _("TIMEOUT EXPIRED: PROCESS TERMINATED")
+        output = e.output
+    except subprocess.CalledProcessError as e:
+        if e.returncode == -signal.SIGSEGV:
+            error_message = _("PROCESS ENDED WITH A FAILURE")
+            error_message += " " + _("(SEGMENTATION FAULT)")
+        else:
+            error_message = _("PROCESS ENDED WITH A FAILURE")
+            error_message += " " + _("(ERROR CODE %d)") % e.returncode
+        output = e.output
+    except FileNotFoundError:
+        output = bytes()
+        error_message = _("FAILED TO RUN THE FILE '%s' ") % sys.argv[2]
+        error_message += _("(the file does not exist)")
+
+        error_message = (("NON E` POSSIBILE ESEGUIRE IL FILE '%s' " +
+                          "(file inesistente)") % sys.argv[2])
+
+    output = output.decode('utf8', errors='ignore').split('\n')
+    result = parse_results(output)
+
+    # Check the output obtained
+    out.open_test(testname, args[1:], input_text=input_text,
+                  error_message=error_message)
+    check_result(result, target, flags)
+    out.close_test()
+
+
+def main():
+    (args, opts) = parse_options()
+    # !!! printer.verbosity = opts['verbosity']
+
+    # Parse the configuration file (if given)
+    cfgfile = opts['config']
+    if not cfgfile:
+        cfg = []
+    else:
+        try:
+            with open(cfgfile, "rt") as f:
+                cfg = parse_results(f)
+        except FileNotFoundError as e:
+            print(e)
+            sys.exit(1)
+
+    # Parse the expected output from the given file
+    try:
+        with open(args[0], "rt") as f:
+            target = parse_results(f)
+    except FileNotFoundError as e:
+        print(e)
+        sys.exit(1)
+
+    # Run the individual tests in the suite
+    out.open_suite()
+    tests = split_tests(cfg + target)
+    first = True
+    for (testname, target) in tests:
+        if first:
+            first = False
+        else:
+            print()
+        dotest(testname, target, args, opts)
+    out.close_suite()
+
+
+if __name__ == '__main__':
+    main()
+    
