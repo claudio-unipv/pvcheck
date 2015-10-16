@@ -16,7 +16,7 @@ For instance, after the compilation of 'program.c', the tool ca be tried by typi
 
   ./pvcheck example.test ./program 3
 
-where "2" is an argument to be passed to 'program' (it accepts as
+where "3" is an argument to be passed to 'program' (it accepts as
 argument the numbers in the range 0..8, where each number causes
 a different behavior of the program).
 
