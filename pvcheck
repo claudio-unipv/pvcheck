@@ -49,7 +49,7 @@ import sys
 import getopt
 import re
 from itertools import count
-from collections import OrderedDict
+from collections import OrderedDict, Counter, defaultdict
 from functools import wraps
 
 
@@ -90,7 +90,12 @@ _translations = {
         "(SEGMENTATION FAULT)": "(SEGMENTATION FAULT)",
         "(ERROR CODE %d)": "(CODICE D'ERRORE %d)",
         "FAILED TO RUN THE FILE '%s' ": "IMPOSSIBILE ESEGUIRE IL FILE '%s' ",
-        "(the file does not exist)": "(file inesistente)"
+        "(the file does not exist)": "(file inesistente)",
+        "SUMMARY": "RIEPILOGO",
+        "successes": "successi",
+        "warnings": "avvertimenti",
+        "errors": "errori",
+        "<program>": "<programma>"
     }
 }
 def _(text):
@@ -138,13 +143,15 @@ class ResultType:
     ERROR = 2
     FATAL = 3
 
+    TYPES = list(range(FATAL+1))
+    
     _TXT = [_(s) for s in "OK WARNING! ERROR ERROR".split()]
-
+    
     @staticmethod
     def tostr(i):
         """String representation of an error type."""
         return ResultType._TXT[i]
-
+    
 
 class SimpleOutput:
     """Base class for reporting the results.
@@ -536,9 +543,12 @@ def check_ordered(key, result, target):
 def check_result(result, target, flags):
     """Compare result against the target output.
 
-    Print messages to show matches and mismatches.
+    Print messages to show matches and mismatches.  Return a summary
+    of the results obtained for each section.
+
     """
 
+    summary = {}
     res = {}
     for (name, content) in result:
         res.setdefault(name, []).extend(content)
@@ -551,15 +561,19 @@ def check_result(result, target, flags):
             r = res[key]
         except KeyError:
             out.close_section(ResultType.WARNING, _("missing section"))
+            summary[key] = ResultType.WARNING
             continue
         if not r and t:
             out.close_section(ResultType.ERROR, _("empty section"))
+            summary[key] = ResultType.ERROR
             continue
         if "unordered" in flags.get(key, ()):
             result = check_unordered(key, r, t)
         else:
             result = check_ordered(key, r, t)
+        summary[key] = result
         out.close_section(result, None)
+    return summary
 
 
 ############################################################
@@ -653,17 +667,21 @@ def dotest(testname, target, args, opts):
         error_message = _("FAILED TO RUN THE FILE '%s' ") % sys.argv[2]
         error_message += _("(the file does not exist)")
 
-        error_message = (("NON E` POSSIBILE ESEGUIRE IL FILE '%s' " +
-                          "(file inesistente)") % sys.argv[2])
-
     output = output.decode('utf8', errors='ignore').split('\n')
     result = parse_results(output)
 
     # Check the output obtained
     out.open_test(testname, args[1:], input_text=input_text,
                   error_message=error_message)
-    check_result(result, target, flags)
+    if error_message is None:
+        summary = check_result(result, target, flags)
+        summary[_("<program>")] = max(summary.values(),
+                                      default=ResultType.SUCCESS)
+    else:
+        summary = {_("<program>"): ResultType.FATAL }
     out.close_test()
+
+    return summary
 
 
 def main():
@@ -694,14 +712,33 @@ def main():
     out.open_suite()
     tests = split_tests(cfg + target)
     first = True
+    summary = defaultdict(Counter)
     for (testname, target) in tests:
         if first:
             first = False
         else:
             print()
-        dotest(testname, target, args, opts)
+        results = dotest(testname, target, args, opts)
+        for sec in results:
+            summary[sec][results[sec]] += 1
     out.close_suite()
 
+    # In the case of multiple tests print a summary
+    if len(tests) > 1:
+        print()
+        print("="*60)
+        print()
+        print(_("SUMMARY"))
+        for k in sorted(summary):
+            fmt = "%s:  \t%d %s,\t%d %s,\t %d %s"
+            a = [k]
+            a += [summary[k][ResultType.SUCCESS], _("successes")]
+            a += [summary[k][ResultType.WARNING], _("warnings")]
+            errs = (summary[k][ResultType.ERROR] +
+                    summary[k][ResultType.FATAL])
+            a += [errs, _("errors")]
+            print(fmt % tuple(a))
+        print()
 
 if __name__ == '__main__':
     main()
