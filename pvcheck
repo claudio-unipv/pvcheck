@@ -375,9 +375,10 @@ def parse_results(f):
         l = line.strip()
         if not l or l[0] == '#':
             continue  # Skip empty lines and comments
-        if l.startswith("[") and l.endswith("]"):
+        if "[" in l and l.endswith("]"):
             # A new section
-            section = l[1:-1].strip().upper()
+            st = l.rfind("[")
+            section = l[(st+1):-1].strip().upper()
             ret.append((section, []))
         elif section is not None:
             ret[-1][1].append(line)
