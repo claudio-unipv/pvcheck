@@ -12,11 +12,11 @@ __doc__ = """Run tests to check the correctness of a program.
 
 Options:
   -v, --verbosity=L  set the verbosity level, where the level must be
-                     an integer between 0 (minimum) and 3 (maximum).
-                     The default value is 2.
+                     an integer between 0 (minimum) and 4 (maximum).
+                     The default value is 3.
   -t, --timeout=T    set how many seconds it should be waited for the
                      termination of the program.  The default is 10
-                     seconds. 
+                     seconds.
   -c, --config=FILE  uses the specified configuration file.
   -h, --help         print this message and exit.
 """
@@ -48,6 +48,7 @@ import os
 import sys
 import getopt
 import re
+import logging
 from itertools import count
 from collections import OrderedDict, Counter, defaultdict
 from functools import wraps
@@ -78,9 +79,10 @@ _translations = {
         " line %d": " riga %d",
         " (expected '%s'": " (atteso '%s'",
         ", got '%s')": ", ottenuto '%s')",
-        " unexpected line '%s'": " riga inattesa '%s'",
+        "unexpected line '%s'": "riga inattesa '%s'",
+        "missing line (expected '%s')": "riga mancante (atteso '%s')",
         "wrong number of lines (expected %d, got %d)": "numero di righe errato (atteso %d, ottenuto %d)",
-        "%s: line %d is wrong  (expected '%s', got '%s')": "%s: riga %d errata  (atteso '%s', ottenuto '%s')",
+        "line %d is wrong  (expected '%s', got '%s')": "riga %d errata  (atteso '%s', ottenuto '%s')",
         "The first %d lines matched correctly": "Le prime %d righe sono corrette",
         "missing section": "sezione mancante",
         "empty section": "sezione vuota",
@@ -136,6 +138,79 @@ def _save_missing_translations():
 # FORMATTED OUTPUT
 ############################################################
 
+# Install a new logging level named "SUCCESS"
+SUCCESS = logging.INFO-1
+logging.addLevelName(SUCCESS, "SUCCESS")
+def success(self, message, *args, **kws):
+    # Yes, logger takes its '*args' as 'args'.
+    if self.isEnabledFor(SUCCESS):
+        self._log(SUCCESS, message, args, **kws)
+logging.Logger.success = success
+log = logging.getLogger()
+
+# Enable colored output for the logger
+class ColorLog(logging.Formatter):
+    """Format log messages.
+
+    Allow colored output and optionally print a section name in front
+    of the message.
+
+    """
+
+    BLUE = '\033[94m'
+    DARK_BLUE = '\033[34m'
+    YELLOW = '\033[93m'
+    DARK_YELLOW = '\033[33m'
+    GREEN = '\033[92m'
+    DARK_GREEN = '\033[92m'
+    RED = '\033[91m'
+    DARK_RED = '\033[91m'
+    GRAY = '\033[97m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+
+    COLORS = {
+        logging.FATAL: BOLD+DARK_RED,
+        logging.ERROR: BOLD+RED,
+        logging.WARNING: BOLD+DARK_YELLOW,
+        logging.INFO: "",
+        SUCCESS: BOLD+DARK_GREEN,
+        logging.DEBUG: BLUE,
+        logging.NOTSET: ""
+    }
+
+    def __init__(self):
+        if sys.stdout.isatty():
+            self._format = self.colored_format
+        else:
+            self._format = self.simple_format
+
+    def format(self, record):
+        return self._format(record)
+
+    def simple_format(self, recors):
+        if hasattr(record, "section"):
+            return ("%s: %s" % (record.section, record.msg))
+        else:
+            return record.msg
+
+    def colored_format(self, record):
+        msg = record.msg
+        idx = min(x for x in self.COLORS if x >= record.levelno)
+        if hasattr(record, "section"):
+            return ("%s%s: %s%s" % (self.COLORS[idx], record.section,
+                                    msg, self.ENDC))
+        else:
+            return ("%s%s%s" % (self.COLORS[idx], msg, self.ENDC))
+
+
+def setup_logging(level):
+    ch = logging.StreamHandler()
+    ch.setFormatter(ColorLog())
+    log.addHandler(ch)
+    log.setLevel(level)
+
+
 class ResultType:
     """Possible results for individual and combined tests."""
     SUCCESS = 0
@@ -144,214 +219,14 @@ class ResultType:
     FATAL = 3
 
     TYPES = list(range(FATAL+1))
-    
+
     _TXT = [_(s) for s in "OK WARNING! ERROR ERROR".split()]
-    
+
     @staticmethod
     def tostr(i):
         """String representation of an error type."""
         return ResultType._TXT[i]
-    
 
-class SimpleOutput:
-    """Base class for reporting the results.
-
-    This class just output the results as plain text.
-    Subclasses may produce fancier output.
-    """
-    def __init__(self, dst):
-        """Set the file-like destination of the output."""
-        self._dst = dst
-        self._cursection = None
-
-    def open_suite(self):
-        """Print a header for the whole test suite."""
-        pass
-
-    def close_suite(self):
-        """Print a trailer for the whole test suite."""
-        pass
-
-    def open_test(self, testname, cmdline, input_text="",
-                  error_message=None):
-        """Print a header for an individual test in a suite.
-
-        The error message must be specified only if the test failed
-        without any output to verify.
-
-        """
-        if testname is not None:
-            self._dst.write(_("TEST") + ": " + testname + "\n")
-        self._dst.write(_("COMMAND LINE") + ": " + " ".join(cmdline) + "\n")
-        if input_text != "":
-            self._dst.write(_("INPUT") +":\n" + input_text.rstrip() + "\n")
-        if error_message is not None:
-            print(error_message)
-
-    def close_test(self):
-        """Print a trailer for an individual test in a suite."""
-        pass
-
-    def open_section(self, sectname):
-        """Print a header for a section in a test."""
-        self._cursection = sectname
-
-    def close_section(self, result_type, message=None):
-        """Print a trailer for a section in a test."""
-        if result_type != ResultType.ERROR:
-            # Errors are already reported by the result_type method
-            msg = self._cursection + ": "
-            if message is None:
-                msg += ResultType.tostr(result_type)
-            else:
-                msg += message.strip()
-            self._dst.write(msg + "\n")
-        self._cursection = None
-
-    def result(self, result_type, lineno, expected, got, message):
-        """Report a result for an element of a section.
-
-        Typically, only errors are reported with this function.
-
-        """
-        msg = self._cursection + ":"
-        if lineno is not None:
-            msg += _(" line %d") % lineno
-        if expected is not None:
-            msg += _(" (expected '%s'") % expected.strip()
-            if got is not None:
-                msg += _(", got '%s')") % got.strip()
-            else:
-                msg += ")"
-        elif got is not None:
-            msg += _(" unexpected line '%s'") % got.strip()
-        msg += " " + message.strip() + "\n"
-        self._dst.write(msg)
-
-
-class AnsiColor:
-    """Helper context manager for style output on the terminal."""
-    
-    # Escape codes
-    BLUE = '\033[94m'
-    DARK_BLUE = '\033[34m'
-    YELLOW = '\033[93m'
-    GREEN = '\033[92m'
-    DARK_GREEN = '\033[92m'
-    RED = '\033[91m'
-    DARK_RED = '\033[91m'
-    GRAY = '\033[97m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    INVERSE = '\033[7m'
-    UNDERLINE = '\033[4m'
-
-    def __init__(self, f, style):
-        self._f = f
-        self._style = style
-
-    def __enter__(self):
-        """Actually set the style."""
-        if self._style is not None:
-            self._f.write(self._style)
-
-    def __exit__(self, type, value, traceback):
-        """Restore a plain style."""
-        if self._style is not None:
-            self._f.write(AnsiColor.ENDC)
-
-
-class ColoredOutput(SimpleOutput):
-    """Report the results using colored text lines."""
-    
-    STYLES = {
-        ResultType.SUCCESS: (AnsiColor.GREEN + AnsiColor.BOLD),
-        ResultType.WARNING: (AnsiColor.YELLOW + AnsiColor.BOLD),
-        ResultType.ERROR: (AnsiColor.RED + AnsiColor.BOLD),
-        ResultType.FATAL: (AnsiColor.RED + AnsiColor.BOLD +
-                           AnsiColor.UNDERLINE)
-    }
-
-    def __init__(self, dst):
-        SimpleOutput.__init__(self, dst)
-
-    def open_test(self, testname, cmdline, input_text="",
-                  error_message=None):
-        if error_message is not None:
-            error_message = (ColoredOutput.STYLES[ResultType.FATAL] +
-                             error_message + AnsiColor.ENDC)
-        SimpleOutput.open_test(self, testname, cmdline,
-                               input_text, error_message)
-
-    def close_section(self, result_type, message=None):
-        with AnsiColor(self._dst, ColoredOutput.STYLES[result_type]):
-            SimpleOutput.close_section(self, result_type, message)
-
-    def result(self, result_type, lineno, expected, got, message):
-        with AnsiColor(self._dst, ColoredOutput.STYLES[result_type]):
-            SimpleOutput.result(self, result_type, lineno,
-                                expected, got, message)
-
-
-if sys.stdout.isatty():
-    out = ColoredOutput(sys.stdout)
-else:
-    out = SimpleOutput(sys.stdout)
-
-
-class ColorPrinter:
-    # !!! ???
-    """Output colored messages."""
-
-    # Escape codes
-    BLUE = '\033[94m'
-    DARK_BLUE = '\033[34m'
-    YELLOW = '\033[93m'
-    GREEN = '\033[92m'
-    DARK_GREEN = '\033[92m'
-    RED = '\033[91m'
-    DARK_RED = '\033[91m'
-    GRAY = '\033[97m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    INVERSE = '\033[7m'
-    UNDERLINE = '\033[4m'
-
-    def __init__(self):
-        self._isatty = sys.stdout.isatty()
-        self.verbosity = 2
-
-    def print_message(self, color, *messages):
-        """Print the message(s) using the given color."""
-        if self._isatty:
-            print(color, sep="", end="")
-            print(*messages, end="")
-            print(ColorPrinter.ENDC)
-        else:
-            print(*messages)
-
-    def error(self, *messages):
-        self.print_message(self.RED + self.BOLD, *messages)
-
-    def fatal(self, *messages):
-        style = self.RED + self.BOLD + self.UNDERLINE
-        self.print_message(style, *messages)
-
-    def warning(self, *messages):
-        if self.verbosity > 0:
-            self.print_message(self.YELLOW + self.BOLD, *messages)
-
-    def success(self, *messages):
-        if self.verbosity > 1:
-            self.print_message(self.DARK_GREEN + self.BOLD, *messages)
-
-    def info(self, *messages):
-        if self.verbosity > 1:
-            self.print_message(*messages)
-
-    def detail(self, *messages):
-        if self.verbosity > 2:
-            self.print_message(*messages)
 
 
 
@@ -495,8 +370,8 @@ def check_unordered(key, result, target):
     err = False
     if len(result) != len(target):
         fmt = _("wrong number of lines (expected %d, got %d)")
-        out.result(ResultType.ERROR, None, None, None,
-                   fmt % (len(target), len(result)))
+        log.error(fmt % (len(target), len(result)),
+                  extra={'section':key})
         err = True
     result = set(result)
     for i, t in enumerate(target):
@@ -508,10 +383,12 @@ def check_unordered(key, result, target):
         if found:
             result.remove(found)
         else:
-            out.result(ResultType.ERROR, None, t.strip(), None, "")
+            fmt = _("missing line (expected '%s')")
+            log.error(fmt % t.strip(), extra={'section':key})
             err = True
     for r in result:
-        out.result(ResultType.ERROR, None, None, r.strip(), "")
+        fmt = _("unexpected line '%s'")
+        log.error(fmt % r.strip(), extra={'section':key})
         err = True
     return (ResultType.ERROR if err else ResultType.SUCCESS)
 
@@ -523,21 +400,20 @@ def check_ordered(key, result, target):
     """
     rescode = ResultType.SUCCESS
     if len(result) != len(target):
-        fmt = _("wrong number of lines (expected %d, got %d)")
-        out.result(ResultType.ERROR, None, None, None,
-                   fmt % (len(target), len(result)))
+        log.error(_("wrong number of lines (expected %d, got %d)"),
+                  len(target), len(result), extra={'section':key})
         rescode = ResultType.ERROR
     mm = check_lines(result, target)
     if len(mm) > 0:
-        fmt = _("%s: line %d is wrong  (expected '%s', got '%s')")
+        fmt = _("line %d is wrong  (expected '%s', got '%s')")
         for (n, got, exp) in mm:
-            out.result(ResultType.ERROR, n+1, exp, got, "")
+            log.error(fmt % (n+1, exp, got), extra={'section':key})
         return ResultType.ERROR
     else:
         if len(result) > 0 and len(result) != len(target):
-            fmt = _("The first %d lines matched correctly")
-            out.result(ResultType.WARNING, None, None, None,
-                       fmt % min(len(result), len(target)))
+            log.warning(_("The first %d lines matched correctly") %
+                        min(len(result), len(target)),
+                        extra={'section':key})
         return rescode
 
 
@@ -557,15 +433,14 @@ def check_result(result, target, flags):
     for (key, t) in target:
         if key.startswith('.'):
             continue  # skip special sessions
-        out.open_section(key)
         try:
             r = res[key]
         except KeyError:
-            out.close_section(ResultType.WARNING, _("missing section"))
+            log.warning(_("missing section"), extra={'section':key})
             summary[key] = ResultType.WARNING
             continue
         if not r and t:
-            out.close_section(ResultType.ERROR, _("empty section"))
+            log.error(_("empty section"), extra={'section':key})
             summary[key] = ResultType.ERROR
             continue
         if "unordered" in flags.get(key, ()):
@@ -573,7 +448,8 @@ def check_result(result, target, flags):
         else:
             result = check_ordered(key, r, t)
         summary[key] = result
-        out.close_section(result, None)
+        if result == ResultType.SUCCESS:
+            log.success(_("OK"), extra={'section':key})
     return summary
 
 
@@ -614,8 +490,8 @@ def parse_options():
             print(_("Invalid parameter ('%s')") % x)
             sys.exit(2)
 
-    verbosity = optval('-v', '--verbosity', '2', int)
-    if verbosity < 0 or verbosity > 3:
+    verbosity = optval('-v', '--verbosity', '3', int)
+    if verbosity < 0 or verbosity > 4:
         print(_("Invalid parameter ('%s')") % verbosity)
         sys.exit(2)
 
@@ -671,23 +547,40 @@ def dotest(testname, target, args, opts):
     output = output.decode('utf8', errors='ignore').split('\n')
     result = parse_results(output)
 
-    # Check the output obtained
-    out.open_test(testname, args[1:], input_text=input_text,
-                  error_message=error_message)
+    # Print a header for the test
+    if testname is not None:
+        if error_message is None:
+            log.info(_("TEST") + ": " + testname)
+        else:
+            fmt = "%s: %s (error: '%s')"
+            log.fatal(fmt % (_("TEST"), testname, error_message))
+    elif error_message is not None:
+        log.fatal(error_message)
+    log.info(_("COMMAND LINE") + ": " + " ".join(args[1:]))
+    if input_text != "":
+        lines = input_text.splitlines()
+        if len(lines) == 1:
+            log.info(_("INPUT") + ": " + lines[0])
+        else:
+            log.info(_("INPUT") + ":")
+            for line in lines:
+                log.info(line)
+
+    # Check the result
     if error_message is None:
         summary = check_result(result, target, flags)
         summary[_("<program>")] = max(summary.values(),
                                       default=ResultType.SUCCESS)
     else:
         summary = {_("<program>"): ResultType.FATAL }
-    out.close_test()
 
     return summary
 
 
 def main():
     (args, opts) = parse_options()
-    # !!! printer.verbosity = opts['verbosity']
+    setup_logging([logging.ERROR, logging.WARNING, logging.INFO,
+                   SUCCESS, logging.DEBUG][opts['verbosity']])
 
     # Parse the configuration file (if given)
     cfgfile = opts['config']
@@ -710,7 +603,6 @@ def main():
         sys.exit(1)
 
     # Run the individual tests in the suite
-    out.open_suite()
     tests = split_tests(cfg + target)
     first = True
     summary = defaultdict(Counter)
@@ -718,29 +610,27 @@ def main():
         if first:
             first = False
         else:
-            print()
+            log.info('')
         results = dotest(testname, target, args, opts)
         for sec in results:
             summary[sec][results[sec]] += 1
-    out.close_suite()
 
     # In the case of multiple tests print a summary
     if len(tests) > 1:
-        print()
-        print("="*60)
-        print()
-        print(_("SUMMARY"))
+        log.info('')
+        log.info("="*60)
+        log.info('')
+        log.info(_("SUMMARY"))
         for k in sorted(summary):
+            errs = (summary[k][ResultType.ERROR] +
+                    summary[k][ResultType.FATAL])
             fmt = "%s:  \t%d %s,\t%d %s,\t %d %s"
             a = [k]
             a += [summary[k][ResultType.SUCCESS], _("successes")]
             a += [summary[k][ResultType.WARNING], _("warnings")]
-            errs = (summary[k][ResultType.ERROR] +
-                    summary[k][ResultType.FATAL])
             a += [errs, _("errors")]
-            print(fmt % tuple(a))
-        print()
+            log.info(fmt % tuple(a))
+        log.info('')
 
 if __name__ == '__main__':
     main()
-    
