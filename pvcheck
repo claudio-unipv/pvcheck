@@ -11,14 +11,15 @@
 __doc__ = """Run tests to check the correctness of a program.
 
 Options:
-  -v, --verbosity=L  set the verbosity level, where the level must be
-                     an integer between 0 (minimum) and 4 (maximum).
-                     The default value is 3.
-  -t, --timeout=T    set how many seconds it should be waited for the
-                     termination of the program.  The default is 10
-                     seconds.
-  -c, --config=FILE  uses the specified configuration file.
-  -h, --help         print this message and exit.
+  -v, --verbosity=L   set the verbosity level, where the level must be
+                      an integer between 0 (minimum) and 4 (maximum).
+                      The default value is 3.
+  -t, --timeout=T     set how many seconds it should be waited for the
+                      termination of the program.  The default is 10
+                      seconds.
+  -m, --max-errors=N  reports up to N errors per section (default 4).
+  -c, --config=FILE   uses the specified configuration file.
+  -h, --help          print this message and exit.
 """
 
 USAGE_en = ("Usage: pvcheck [OPTIONS]... TEST_FILE EXECUTABLE " +
@@ -32,14 +33,16 @@ USAGE_it = ("Utilizzo: pvcheck [OPZIONI...] " +
 HELP_it = """Esegue dei test per verificare la correttezza di un programma.
 
 Opzioni:
-  -v, --verbosity=L  imposto il livello di verbosita`.  Il livello deve
-                     essere un valore intero tra 0 (minimo) e 3
-                     (massimo).  Il default e` 2.
-  -t, --timeout=T    imposta per quanti secondi bisogna attendere
-                     la terminazione del programma.  Il default e` pari
-                     a 10 secondi.
-  -c, --config=FILE  utilizza il file di configurazione specificato.
-  -h, --help         stampa questo messaggio ed esce.
+  -v, --verbosity=L   imposto il livello di verbosità.  Il livello
+                      deve essere un valore intero tra 0 (minimo) e 3
+                      (massimo).  Il default è 2.
+  -t, --timeout=T     imposta per quanti secondi bisogna attendere
+                      la terminazione del programma.  Il default è
+                      pari a 10 secondi.
+  -m, --max-errors=N  riporta fino ad un massimo di N errori per
+                      sezione (default 4).
+  -c, --config=FILE   utilizza il file di configurazione specificato.
+  -h, --help          stampa questo messaggio ed esce.
 """
 
 import subprocess
@@ -49,7 +52,7 @@ import sys
 import getopt
 import re
 import logging
-from itertools import count
+from itertools import count, zip_longest
 from collections import OrderedDict, Counter, defaultdict
 from functools import wraps
 
@@ -84,8 +87,14 @@ _translations = {
         "wrong number of lines (expected %d, got %d)": "numero di righe errato (atteso %d, ottenuto %d)",
         "line %d is wrong  (expected '%s', got '%s')": "riga %d errata  (atteso '%s', ottenuto '%s')",
         "The first %d lines matched correctly": "Le prime %d righe sono corrette",
+        "(... plus other %d errors ...)": "(... più altri %d errori ...)",
+        'ACTUAL OUTPUT': 'OUTPUT EFFETTIVO',
+        'EXPECTED OUTPUT': 'OUTPUT ATTESO',
+        'detailed comparison': 'confronto dettagliato',
+        "<nothing>": "<niente>",
         "missing section": "sezione mancante",
         "empty section": "sezione vuota",
+        "extra section": "sezione extra",
         "Invalid parameter ('%s')": "Parametro non valido ('%s')",
         "TIMEOUT EXPIRED: PROCESS TERMINATED":"TEMPO LIMITE SCADUTO: PROCESSO TERMINATO",
         "PROCESS ENDED WITH A FAILURE": "PROCESSO TERMINATO CON UN FALLIMENTO",
@@ -188,7 +197,7 @@ class ColorLog(logging.Formatter):
     def format(self, record):
         return self._format(record)
 
-    def simple_format(self, recors):
+    def simple_format(self, record):
         if hasattr(record, "section"):
             return ("%s: %s" % (record.section, record.msg))
         else:
@@ -362,52 +371,95 @@ def check_lines(res, target):
     return diffs
 
 
-def check_unordered(key, result, target):
+def check_unordered(key, result, target, maxerrors=None):
     """Compare the two sets of lines disregarding their order.
 
     Print messages to show matches and mismatches.
     """
-    err = False
+
+    fmt = "%-30s| %-30s"
+    log.debug(_("detailed comparison"), extra={'section':key})
+    log.debug(fmt % (_("EXPECTED OUTPUT"), _("ACTUAL OUTPUT")))
+
+    def dbg(t, r):
+        t = t.rstrip() if t is not None else _("<nothing>")
+        r = r.rstrip() if r is not None else _("<nothing>")
+        if len(t) > 30:
+            t = t[:26] + "..."
+        if len(r) > 30:
+            r = r[:26] + "..."
+        fmt = "%-30s| %-30s"
+        log.debug(fmt % (t, r))
+
+    if maxerrors is None:
+        maxerrors = len(result) + len(target)
+    errors = []
     if len(result) != len(target):
         fmt = _("wrong number of lines (expected %d, got %d)")
-        log.error(fmt % (len(target), len(result)),
-                  extra={'section':key})
-        err = True
+        errors.append(fmt % (len(target), len(result)))
+
     result = set(result)
     for i, t in enumerate(target):
         found = None
         for r in result:
             if check_line(r, t):
                 found = r
+                dbg(t, r)
+                result.remove(found)
                 break
-        if found:
-            result.remove(found)
         else:
             fmt = _("missing line (expected '%s')")
-            log.error(fmt % t.strip(), extra={'section':key})
-            err = True
+            errors.append(fmt % t.strip())
+            dbg(t, None)
     for r in result:
         fmt = _("unexpected line '%s'")
-        log.error(fmt % r.strip(), extra={'section':key})
-        err = True
-    return (ResultType.ERROR if err else ResultType.SUCCESS)
+        errors.append(fmt % r.strip())
+        dbg(None, r)
+
+    for e in errors[:maxerrors]:
+        log.error(e, extra={'section':key})
+    if len(errors) > maxerrors:
+        log.error(_("(... plus other %d errors ...)") %
+                  (len(errors) - maxerrors),
+                  extra={'section':key})
+    return (ResultType.ERROR if errors else ResultType.SUCCESS)
 
 
-def check_ordered(key, result, target):
+def check_ordered(key, result, target, maxerrors=None):
     """Line by line comparison of result and target.
 
     Print messages to show matches and mismatches.
     """
+    if maxerrors is None:
+        maxerrors = len(result) + len(target)
     rescode = ResultType.SUCCESS
+
+    fmt = "%-30s| %-30s"
+    log.debug(_("detailed comparison"), extra={'section':key})
+    log.debug(fmt % (_("EXPECTED OUTPUT"), _("ACTUAL OUTPUT")))
+    for t, r in zip_longest(target, result):
+        st = (t.rstrip() if t is not None else _("<nothing>"))
+        sr = (r.rstrip() if r is not None else _("<nothing>"))
+        if len(st) > 30:
+            st = st[:26] + "..."
+        if len(sr) > 30:
+            sr = sr[:26] + "..."
+        log.debug(fmt % (st, sr))
+
     if len(result) != len(target):
-        log.error(_("wrong number of lines (expected %d, got %d)"),
-                  len(target), len(result), extra={'section':key})
+        fmt = _("wrong number of lines (expected %d, got %d)")
+        log.error(fmt % (len(target), len(result)),
+                  extra={'section':key})
         rescode = ResultType.ERROR
     mm = check_lines(result, target)
     if len(mm) > 0:
         fmt = _("line %d is wrong  (expected '%s', got '%s')")
-        for (n, got, exp) in mm:
+        for (n, got, exp) in mm[:maxerrors]:
             log.error(fmt % (n+1, exp, got), extra={'section':key})
+        if len(mm) > maxerrors:
+            log.error(_("(... plus other %d errors ...)") %
+                      (len(mm) - maxerrors),
+                      extra={'section':key})
         return ResultType.ERROR
     else:
         if len(result) > 0 and len(result) != len(target):
@@ -417,14 +469,13 @@ def check_ordered(key, result, target):
         return rescode
 
 
-def check_result(result, target, flags):
+def check_result(result, target, flags, maxerrors=None):
     """Compare result against the target output.
 
     Print messages to show matches and mismatches.  Return a summary
     of the results obtained for each section.
 
     """
-
     summary = {}
     res = {}
     for (name, content) in result:
@@ -444,12 +495,16 @@ def check_result(result, target, flags):
             summary[key] = ResultType.ERROR
             continue
         if "unordered" in flags.get(key, ()):
-            result = check_unordered(key, r, t)
+            secresult = check_unordered(key, r, t, maxerrors)
         else:
-            result = check_ordered(key, r, t)
-        summary[key] = result
-        if result == ResultType.SUCCESS:
+            secresult = check_ordered(key, r, t, maxerrors)
+        summary[key] = secresult
+        if secresult == ResultType.SUCCESS:
             log.success(_("OK"), extra={'section':key})
+
+    extra = set(x[0] for x in result) - set(x[0] for x in target)
+    for item in extra:
+        log.debug(_("extra section"), extra={'section':item[0]})
     return summary
 
 
@@ -460,8 +515,9 @@ def check_result(result, target, flags):
 def parse_options():
     """Parse the command line."""
 
-    shortopts = "hc:t:v:"
-    longopts = ["help", "config=", "verbosity=", "timeout="]
+    shortopts = "hc:t:v:m:"
+    longopts = ["help", "config=", "verbosity=", "timeout=",
+                "max-errors="]
     try:
         opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err:
@@ -492,19 +548,25 @@ def parse_options():
 
     verbosity = optval('-v', '--verbosity', '3', int)
     if verbosity < 0 or verbosity > 4:
-        print(_("Invalid parameter ('%s')") % verbosity)
+        print(_("Invalid parameter ('%d')") % verbosity)
         sys.exit(2)
 
     timeout = optval('-t', '--timeout', '10', float)
     if timeout < 0:
-        print(_("Invalid parameter ('%s')") % timeout)
+        print(_("Invalid parameter ('%f')") % timeout)
+        sys.exit(2)
+
+    maxerrors = optval('-m', '--max-errors', '4', int)
+    if maxerrors < 0:
+        print(_("Invalid parameter ('%d')") % maxerrors)
         sys.exit(2)
 
     config = optval('-c', '--config', '', str)
 
     opts = dict(config=config,
                 verbosity=verbosity,
-                timeout=timeout)
+                timeout=timeout,
+                maxerrors=maxerrors)
 
     return (args, opts)
 
@@ -568,7 +630,8 @@ def dotest(testname, target, args, opts):
 
     # Check the result
     if error_message is None:
-        summary = check_result(result, target, flags)
+        summary = check_result(result, target, flags,
+                               opts['maxerrors'])
         summary[_("<program>")] = max(summary.values(),
                                       default=ResultType.SUCCESS)
     else:
