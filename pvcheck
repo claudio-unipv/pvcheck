@@ -11,15 +11,16 @@
 __doc__ = """Run tests to check the correctness of a program.
 
 Options:
-  -v, --verbosity=L   set the verbosity level, where the level must be
-                      an integer between 0 (minimum) and 4 (maximum).
-                      The default value is 3.
-  -t, --timeout=T     set how many seconds it should be waited for the
-                      termination of the program.  The default is 10
-                      seconds.
-  -m, --max-errors=N  reports up to N errors per section (default 4).
-  -c, --config=FILE   uses the specified configuration file.
-  -h, --help          print this message and exit.
+  -v, --verbosity=L        set the verbosity level, where the level must be
+                           an integer between 0 (minimum) and 4 (maximum).
+                           The default value is 3.
+  -t, --timeout=T          set how many seconds it should be waited for the
+                           termination of the program.  The default is 10
+                           seconds.
+  -m, --max-errors=N       reports up to N errors per section (default 4).
+  -c, --config=FILE        uses the specified configuration file.
+  -C, --color=YES|NO|AUTO  enable or disable colored output (default AUTO).
+  -h, --help               print this message and exit.
 """
 
 USAGE_en = ("Usage: pvcheck [OPTIONS]... TEST_FILE EXECUTABLE " +
@@ -188,8 +189,8 @@ class ColorLog(logging.Formatter):
         logging.NOTSET: ""
     }
 
-    def __init__(self):
-        if sys.stdout.isatty():
+    def __init__(self, color):
+        if color:
             self._format = self.colored_format
         else:
             self._format = self.simple_format
@@ -213,9 +214,9 @@ class ColorLog(logging.Formatter):
             return ("%s%s%s" % (self.COLORS[idx], msg, self.ENDC))
 
 
-def setup_logging(level):
-    ch = logging.StreamHandler()
-    ch.setFormatter(ColorLog())
+def setup_logging(level, color):
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setFormatter(ColorLog(color))
     log.addHandler(ch)
     log.setLevel(level)
 
@@ -515,9 +516,9 @@ def check_result(result, target, flags, maxerrors=None):
 def parse_options():
     """Parse the command line."""
 
-    shortopts = "hc:t:v:m:"
+    shortopts = "hc:t:v:m:C:"
     longopts = ["help", "config=", "verbosity=", "timeout=",
-                "max-errors="]
+                "max-errors=", "color="]
     try:
         opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err:
@@ -563,10 +564,17 @@ def parse_options():
 
     config = optval('-c', '--config', '', str)
 
+    color = optval('-C', '--color', 'AUTO', str).upper()
+    if color not in ("YES", "NO", "AUTO"):
+        print(_("Invalid parameter ('%s')") % color)
+        sys.exit(2)
+    color = (color == "YES" or (color == "AUTO" and sys.stdout.isatty()))
+
     opts = dict(config=config,
                 verbosity=verbosity,
                 timeout=timeout,
-                maxerrors=maxerrors)
+                maxerrors=maxerrors,
+                color=color)
 
     return (args, opts)
 
@@ -642,8 +650,9 @@ def dotest(testname, target, args, opts):
 
 def main():
     (args, opts) = parse_options()
-    setup_logging([logging.ERROR, logging.WARNING, logging.INFO,
-                   SUCCESS, logging.DEBUG][opts['verbosity']])
+    lvl = [logging.ERROR, logging.WARNING, logging.INFO,
+           SUCCESS, logging.DEBUG][opts['verbosity']]
+    setup_logging(lvl, opts['color'])
 
     # Parse the configuration file (if given)
     cfgfile = opts['config']
