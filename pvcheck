@@ -53,9 +53,11 @@ import sys
 import getopt
 import re
 import logging
+import tempfile
 from itertools import count, zip_longest
 from collections import OrderedDict, Counter, defaultdict
 from functools import wraps
+
 
 
 ############################################################
@@ -79,6 +81,8 @@ _translations = {
         "WARNING!": "ATTENZIONE!",
         "COMMAND LINE": "RIGA DI COMANDO",
         "INPUT": "INPUT",
+        "OUTPUT": "OUTPUT",
+        "TEMPORARY FILE": "FILE TEMPORANEO",
         "TEST": "TEST",
         " line %d": " riga %d",
         " (expected '%s'": " (atteso '%s'",
@@ -588,8 +592,22 @@ def dotest(testname, target, args, opts):
     except KeyError:
         input_text = None
 
+    try:
+        file_text = ("".join(group_sections_by_name(target, ".FILE")))
+        tmpfile = tempfile.NamedTemporaryFile(suffix=".pvcheck.tmp",
+                                              delete=False)
+        tmpfile.write(file_text.encode('utf8'))
+        tmpfile.close()
+    except KeyError:
+        file_text = None
+        tmpfile = None
+
     args = args[:]
-    args.extend(map(str.strip, group_sections_by_name(target, ".ARGS")))
+    extra = map(str.strip, group_sections_by_name(target, ".ARGS"))
+    args.extend(extra)
+    if tmpfile is not None:
+        args = [(a if a != ".FILE" else tmpfile.name) for a in args]
+        
     flags = interpret_section_flags(group_sections_by_name(target, ".SECTIONS"))
 
     # Execute the process and parse its output
@@ -614,6 +632,9 @@ def dotest(testname, target, args, opts):
         error_message = _("FAILED TO RUN THE FILE '%s' ") % sys.argv[2]
         error_message += _("(the file does not exist)")
 
+    if tmpfile is not None:
+        os.remove(tmpfile.name)
+        
     output = output.decode('utf8', errors='ignore').split('\n')
     result = parse_results(output)
 
@@ -635,6 +656,18 @@ def dotest(testname, target, args, opts):
             log.info(_("INPUT") + ":")
             for line in lines:
                 log.info(line)
+    if file_text is not None:
+        lines = file_text.splitlines()
+        if len(lines) == 1:
+            log.debug(_("TEMPORARY FILE") + ": " + lines[0])
+        else:
+            log.debug(_("TEMPORARY FILE") + ":")
+            for line in lines:
+                log.info(line)
+
+    log.debug(_("OUTPUT") + ":")
+    for line in output:
+        log.debug("> " + line)
 
     # Check the result
     if error_message is None:
@@ -682,7 +715,7 @@ def main():
         if first:
             first = False
         else:
-            log.info('')
+            log.info('-' * 60)
         results = dotest(testname, target, args, opts)
         for sec in results:
             summary[sec][results[sec]] += 1
@@ -690,7 +723,7 @@ def main():
     # In the case of multiple tests print a summary
     if len(tests) > 1:
         log.info('')
-        log.info("="*60)
+        log.info("=" * 60)
         log.info('')
         log.info(_("SUMMARY"))
         for k in sorted(summary):

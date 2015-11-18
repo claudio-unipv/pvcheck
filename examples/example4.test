@@ -1,0 +1,64 @@
+############################################################
+# EXAMPLE USING TEMPORARY FILES
+############################################################
+
+# The program is supposed to count the characters (ignoring
+# whitespaces) and the lines of the file whose name is passed as a
+# command-line argument.
+
+
+[.ARGS]
+# The argument ".FILE" will be replaced by the name of the temporary
+# file.  Since this directive is placed before the first [.TEST] it is
+# replicated for all the tests in the suite.  Additional arguments
+# could be specified with a [.ARGS] section within each individual
+# test.
+.FILE
+
+############################################################
+
+[.TEST]
+Single line
+
+[.FILE]
+# Each [.FILE] directive corresponds to the content to be written to
+# the temporary file.
+Abc
+
+[LINES]
+1
+
+[CHARACTERS]
+3
+
+############################################################
+
+[.TEST]
+Two lines
+
+[.FILE]
+Abc
+1234
+
+[LINES]
+2
+
+[CHARACTERS]
+7
+
+############################################################
+
+[.TEST]
+Three lines
+
+[.FILE]
+1
+2
+3
+
+[LINES]
+3
+
+[CHARACTERS]
+3
+
