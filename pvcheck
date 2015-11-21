@@ -20,6 +20,7 @@ Options:
   -m, --max-errors=N       reports up to N errors per section (default 4).
   -c, --config=FILE        uses the specified configuration file.
   -C, --color=YES|NO|AUTO  enable or disable colored output (default AUTO).
+  -V, --valgrind           use Valgrind (if installed) to check memory usage.
   -h, --help               print this message and exit.
 """
 
@@ -34,16 +35,20 @@ USAGE_it = ("Utilizzo: pvcheck [OPZIONI...] " +
 HELP_it = """Esegue dei test per verificare la correttezza di un programma.
 
 Opzioni:
-  -v, --verbosity=L   imposto il livello di verbosità.  Il livello
-                      deve essere un valore intero tra 0 (minimo) e 3
-                      (massimo).  Il default è 2.
-  -t, --timeout=T     imposta per quanti secondi bisogna attendere
-                      la terminazione del programma.  Il default è
-                      pari a 10 secondi.
-  -m, --max-errors=N  riporta fino ad un massimo di N errori per
-                      sezione (default 4).
-  -c, --config=FILE   utilizza il file di configurazione specificato.
-  -h, --help          stampa questo messaggio ed esce.
+  -v, --verbosity=L        imposto il livello di verbosità.  Il livello
+                           deve essere un valore intero tra 0 (minimo) e 3
+                           (massimo).  Il default è 2.
+  -t, --timeout=T          imposta per quanti secondi bisogna attendere
+                           la terminazione del programma.  Il default è
+                           pari a 10 secondi.
+  -m, --max-errors=N       riporta fino ad un massimo di N errori per
+                           sezione (default 4).
+  -c, --config=FILE        utilizza il file di configurazione specificato.
+  -C, --color=YES|NO|AUTO  abilita o disabilita l'output colorato (default
+                           AUTO).
+  -V, --valgrind           utilizza Valgrind (se installato) per controllare
+                           l'utilizzo della memoria.
+  -h, --help               stampa questo messaggio ed esce.
 """
 
 import subprocess
@@ -520,9 +525,9 @@ def check_result(result, target, flags, maxerrors=None):
 def parse_options():
     """Parse the command line."""
 
-    shortopts = "hc:t:v:m:C:"
+    shortopts = "hc:t:v:m:C:V"
     longopts = ["help", "config=", "verbosity=", "timeout=",
-                "max-errors=", "color="]
+                "max-errors=", "color=", "valgrind="]
     try:
         opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err:
@@ -574,13 +579,50 @@ def parse_options():
         sys.exit(2)
     color = (color == "YES" or (color == "AUTO" and sys.stdout.isatty()))
 
+    valgrind = (True if '-V' in opts or '--valgrind' in opts else False)
     opts = dict(config=config,
                 verbosity=verbosity,
                 timeout=timeout,
                 maxerrors=maxerrors,
-                color=color)
+                color=color,
+                valgrind=valgrind)
 
     return (args, opts)
+
+
+def parse_valgrind(report):
+    """Analyse the report by Valgrind and log the result."""
+    warnings = 0
+    errors = 0
+    for line in report:
+        if not line.startswith('=='):
+            continue
+        f = line.split()
+        if "in use at exit" in line:
+            bytes_ = int(f[5])
+            if bytes_ > 0:
+                log.warning("VALGRIND: memory %s" % " ".join(f[1:]))
+                warnings += 1
+            else:
+                log.debug("VALGRIND: memory %s" % " ".join(f[1:]))
+        elif "total heap usage" in line:
+            allocs = int(f[4])
+            frees = int(f[6])
+            if allocs != frees:
+                log.warning("VALGRIND: %s" % " ".join(f[1:]))
+                warnings += 1
+            else:
+                log.debug("VALGRIND: %s" % " ".join(f[1:]))
+
+        elif "ERROR SUMMARY" in line:
+            errs = int(f[3])
+            if errs > 0:
+                log.warning("VALGRIND: %s" % " ".join(f[3:]))
+                errors += errs
+            else:
+                log.debug("VALGRIND: %s" % " ".join(f[3:]))
+    return (errors, warnings)
+
 
 
 def dotest(testname, target, args, opts):
@@ -607,15 +649,24 @@ def dotest(testname, target, args, opts):
     args.extend(extra)
     if tmpfile is not None:
         args = [(a if a != ".FILE" else tmpfile.name) for a in args]
-        
-    flags = interpret_section_flags(group_sections_by_name(target, ".SECTIONS"))
 
+    flags = interpret_section_flags(group_sections_by_name(target, ".SECTIONS"))
+ 
+    kwargs = dict(input=input_bytes,
+                  timeout=opts['timeout'])
+
+    if opts['valgrind']:
+        args.insert(1, "valgrind")
+        valgrind_out = tempfile.NamedTemporaryFile(suffix=".pvcheck.valgrind",
+                                                   delete=False)
+        kwargs['stderr'] = valgrind_out
+    else:
+        valgrind_out = None
+        
     # Execute the process and parse its output
     error_message = None
     try:
-        output = subprocess.check_output(args[1:],
-                                         input=input_bytes,
-                                         timeout=opts['timeout'])
+        output = subprocess.check_output(args[1:], **kwargs)
     except subprocess.TimeoutExpired as e:
         error_message = _("TIMEOUT EXPIRED: PROCESS TERMINATED")
         output = e.output
@@ -635,6 +686,14 @@ def dotest(testname, target, args, opts):
     if tmpfile is not None:
         os.remove(tmpfile.name)
         
+    if valgrind_out is not None:
+        valgrind_out.close()
+        with open(valgrind_out.name, "rt") as f:
+            valgrind_report = [x for x in f]
+        os.remove(valgrind_out.name)
+    else:
+        valgrind_report = []
+
     output = output.decode('utf8', errors='ignore').split('\n')
     result = parse_results(output)
 
@@ -669,6 +728,8 @@ def dotest(testname, target, args, opts):
     for line in output:
         log.debug("> " + line)
 
+    parse_valgrind(valgrind_report)
+                            
     # Check the result
     if error_message is None:
         summary = check_result(result, target, flags,
