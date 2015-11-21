@@ -694,7 +694,7 @@ def dotest(testname, target, args, opts):
     else:
         valgrind_report = []
 
-    output = output.decode('utf8', errors='ignore').split('\n')
+    output = output.decode('utf8', errors='replace').split('\n')
     result = parse_results(output)
 
     # Print a header for the test
