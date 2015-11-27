@@ -116,7 +116,8 @@ _translations = {
         "successes": "successi",
         "warnings": "avvertimenti",
         "errors": "errori",
-        "<program>": "<programma>"
+        "<program>": "<programma>",
+	"<valgrind>": "<valgrind>"
     }
 }
 def _(text):
@@ -617,7 +618,7 @@ def parse_valgrind(report):
         elif "ERROR SUMMARY" in line:
             errs = int(f[3].replace(',', ''))
             if errs > 0:
-                log.warning("VALGRIND: %s" % " ".join(f[3:]))
+                log.error("VALGRIND: %s" % " ".join(f[3:]))
                 errors += errs
             else:
                 log.debug("VALGRIND: %s" % " ".join(f[3:]))
@@ -694,7 +695,7 @@ def dotest(testname, target, args, opts):
     else:
         valgrind_report = []
 
-    output = output.decode('utf8', errors='replace').split('\n')
+    output = output.decode('utf-8', errors='replace').split('\n')
     result = parse_results(output)
 
     # Print a header for the test
@@ -728,8 +729,8 @@ def dotest(testname, target, args, opts):
     for line in output:
         log.debug("> " + line)
 
-    parse_valgrind(valgrind_report)
-                            
+    (verr, vwarn) = parse_valgrind(valgrind_report)
+
     # Check the result
     if error_message is None:
         summary = check_result(result, target, flags,
@@ -738,6 +739,14 @@ def dotest(testname, target, args, opts):
                                       default=ResultType.SUCCESS)
     else:
         summary = {_("<program>"): ResultType.FATAL }
+
+    if opts['valgrind']:
+        if verr > 0:
+            summary[_("<valgrind>")] = ResultType.ERROR
+        elif vwarn > 0:
+            summary[_("<valgrind>")] = ResultType.WARNING
+        else:
+            summary[_("<valgrind>")] = ResultType.SUCCESS
 
     return summary
 
