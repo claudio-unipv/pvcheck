@@ -112,6 +112,7 @@ _translations = {
         "(ERROR CODE %d)": "(CODICE D'ERRORE %d)",
         "FAILED TO RUN THE FILE '%s' ": "IMPOSSIBILE ESEGUIRE IL FILE '%s' ",
         "(the file does not exist)": "(file inesistente)",
+        "(... plus other %d lines ...)": "(... più altre %d righe ...)",
         "SUMMARY": "RIEPILOGO",
         "successes": "successi",
         "warnings": "avvertimenti",
@@ -625,6 +626,25 @@ def parse_valgrind(report):
     return (errors, warnings)
 
 
+def log_lines(header, lines, max_lines=None):
+    """Log each line after the header.
+
+    Only the first max_lines lines will be logged (when the parameter
+    is given).
+
+    """
+    if max_lines is None:
+        max_lines = len(lines)
+    if len(lines) == 1:
+        log.info(header + ": " + lines[0])
+    else:
+        log.info(header + ":")
+        for line in lines[:max_lines]:
+            log.info(line)
+        if len(lines) > max_lines:
+            extra = len(lines) - max_lines
+            log.info(_("(... plus other %d lines ...)") % extra)
+
 
 def dotest(testname, target, args, opts):
     """Execute the process and verify its output against target."""
@@ -708,22 +728,16 @@ def dotest(testname, target, args, opts):
     elif error_message is not None:
         log.fatal(error_message)
     log.info(_("COMMAND LINE") + ": " + " ".join(args[1:]))
+
+    max_lines = (10000 if opts['verbosity'] >= 4 else 5)
     if input_text != "":
-        lines = input_text.splitlines()
-        if len(lines) == 1:
-            log.info(_("INPUT") + ": " + lines[0])
-        else:
-            log.info(_("INPUT") + ":")
-            for line in lines:
-                log.info(line)
+        log_lines(_("INPUT"), input_text.splitlines(),
+                  max_lines=max_lines)
+
     if file_text is not None:
         lines = file_text.splitlines()
-        if len(lines) == 1:
-            log.debug(_("TEMPORARY FILE") + ": " + lines[0])
-        else:
-            log.debug(_("TEMPORARY FILE") + ":")
-            for line in lines:
-                log.info(line)
+        log_lines(_("TEMPORARY FILE"), file_text.splitlines(),
+                  max_lines=max_lines)
 
     log.debug(_("OUTPUT") + ":")
     for line in output:
