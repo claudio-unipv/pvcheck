@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 
-# TODO:
-# - sommario
-# - output json (?)
-# - localizzazione ITA/ENG (?)
-# - verbosita`
-# - qualche commento in piu` (sezione output)
-# - supporto per valgrind
-
 __doc__ = """Run tests to check the correctness of a program.
 
 Options:
@@ -529,7 +521,7 @@ def parse_options():
 
     shortopts = "hc:t:v:m:C:V"
     longopts = ["help", "config=", "verbosity=", "timeout=",
-                "max-errors=", "color=", "valgrind="]
+                "max-errors=", "color=", "valgrind"]
     try:
         opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err:
@@ -646,22 +638,31 @@ def log_lines(header, lines, max_lines=None):
             log.info(_("(... plus other %d lines ...)") % extra)
 
 
+def exist_section(sections, name):
+    """Check if a section exists."""
+    for (secname, lines) in sections:
+        if secname == name:
+            return True
+    return False
+            
+
 def dotest(testname, target, args, opts):
     """Execute the process and verify its output against target."""
 
-    try:
+    if exist_section(target, ".INPUT"):    
         input_text = ("".join(group_sections_by_name(target, ".INPUT")))
         input_bytes = input_text.encode('utf8')
-    except KeyError:
+    else:
         input_text = None
+        input_bytes = bytes()
 
-    try:
+    if exist_section(target, ".FILE"):    
         file_text = ("".join(group_sections_by_name(target, ".FILE")))
         tmpfile = tempfile.NamedTemporaryFile(suffix=".pvcheck.tmp",
                                               delete=False)
         tmpfile.write(file_text.encode('utf8'))
         tmpfile.close()
-    except KeyError:
+    else:
         file_text = None
         tmpfile = None
 
@@ -730,7 +731,7 @@ def dotest(testname, target, args, opts):
     log.info(_("COMMAND LINE") + ": " + " ".join(args[1:]))
 
     max_lines = (10000 if opts['verbosity'] >= 4 else 5)
-    if input_text != "":
+    if input_text is not None:
         log_lines(_("INPUT"), input_text.splitlines(),
                   max_lines=max_lines)
 
