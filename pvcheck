@@ -798,6 +798,29 @@ def print_lines(input_text, file_text, output, opts):
         log.debug("> " + line)
 
 
+def print_final_summary(tests):
+    summary = defaultdict(Counter)
+    for testname in tests:
+        results = tests[testname]['summary']
+        for sec in results:
+            summary[sec][results[sec]] += 1
+
+    log.info('')
+    log.info("=" * 60)
+    log.info('')
+    log.info(_("SUMMARY"))
+    for k in sorted(summary):
+        errs = (summary[k][ResultType.ERROR] +
+                summary[k][ResultType.FATAL])
+        fmt = "%s:  \t%d %s,\t%d %s,\t %d %s"
+        a = [k]
+        a += [summary[k][ResultType.SUCCESS], _("successes")]
+        a += [summary[k][ResultType.WARNING], _("warnings")]
+        a += [errs, _("errors")]
+        log.info(fmt % tuple(a))
+    log.info('')
+
+
 def main():
     (args, opts) = parse_options()
     lvl = [logging.ERROR, logging.WARNING, logging.INFO,
@@ -827,7 +850,6 @@ def main():
     # Run the individual tests in the suite
     tests = split_tests(cfg + target)
     first = True
-    summary = defaultdict(Counter)
     global_out = {}
     for (testname, target) in tests:
         if first:
@@ -847,25 +869,10 @@ def main():
         print_header(testname, error_message, args)
         print_lines(input_text, file_text, output, opts)
         
-        for sec in results:
-            summary[sec][results[sec]] += 1
-
     # In the case of multiple tests print a summary
     if len(tests) > 1:
-        log.info('')
-        log.info("=" * 60)
-        log.info('')
-        log.info(_("SUMMARY"))
-        for k in sorted(summary):
-            errs = (summary[k][ResultType.ERROR] +
-                    summary[k][ResultType.FATAL])
-            fmt = "%s:  \t%d %s,\t%d %s,\t %d %s"
-            a = [k]
-            a += [summary[k][ResultType.SUCCESS], _("successes")]
-            a += [summary[k][ResultType.WARNING], _("warnings")]
-            a += [errs, _("errors")]
-            log.info(fmt % tuple(a))
-        log.info('')
+        print_final_summary(global_out)
+
 
 if __name__ == '__main__':
     main()
