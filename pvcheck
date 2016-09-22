@@ -752,7 +752,12 @@ def dotest(testname, target, args, opts):
         else:
             summary[_("<valgrind>")] = ResultType.SUCCESS
 
-    return (summary, error_message)
+    outDict = {
+        'summary': summary,
+        'error_message': error_message
+    }
+
+    return outDict
 
 
 def print_header(testname, error_message, args):
@@ -803,7 +808,9 @@ def main():
             first = False
         else:
             log.info('-' * 60)
-        (results, error_message) = dotest(testname, target, args, opts)
+        outDict = dotest(testname, target, args, opts)
+        results = outDict['summary']
+        error_message = outDict['error_message']
         print_header(testname, error_message, args)
         for sec in results:
             summary[sec][results[sec]] += 1
