@@ -46,6 +46,7 @@ Opzioni:
 """
 
 import subprocess
+from subprocess import Popen, PIPE
 import signal
 import os
 import sys
@@ -357,6 +358,31 @@ def check_element(r, t):
         return (r == t)
 
 
+def check_wdiff(res, target):
+    file_text = ("\n".join(res))
+    tmpfile1 = tempfile.NamedTemporaryFile(suffix=".res.pvcheck.tmp",
+                                          delete=False)
+    tmpfile1.write(file_text.encode('utf8'))
+    tmpfile1.close()
+
+    file_text = ("\n".join(target))
+    tmpfile2 = tempfile.NamedTemporaryFile(suffix=".target.pvcheck.tmp",
+                                          delete=False)
+    tmpfile2.write(file_text.encode('utf8'))
+    tmpfile2.close()
+
+    p = Popen(['wdiff', '-s123', tmpfile1.name, tmpfile2.name], stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=-1)
+    output, error = p.communicate()
+    ret = {
+        'code': p.returncode
+    }
+    if p.returncode <= 1:
+       ret['output'] = output
+    else:
+       ret['output'] = "Error occurred in wdiff"
+    return ret
+
+
 def check_line(res, target):
     """Compare the result line with the expected target."""
     res_elements = res.split()
@@ -447,6 +473,8 @@ def check_ordered(key, result, target, maxerrors=None):
     if len(result) != len(target):
         rescode = ResultType.ERROR
     mm = check_lines(result, target)
+    wd = check_wdiff(result, target)
+    
     if len(mm) > 0:
         rescode = ResultType.ERROR
     else:
@@ -456,7 +484,8 @@ def check_ordered(key, result, target, maxerrors=None):
         'wrong lines': mm,
         'tot lines': len(target),
         'result': result,
-        'target': target
+        'target': target,
+        'wdiff': wd
     }
     return ret
 
