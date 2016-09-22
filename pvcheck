@@ -13,6 +13,7 @@ Options:
   -c, --config=FILE        uses the specified configuration file.
   -C, --color=YES|NO|AUTO  enable or disable colored output (default AUTO).
   -V, --valgrind           use Valgrind (if installed) to check memory usage.
+  -o, --output=RESUME|JSON select the output type.
   -h, --help               print this message and exit.
 """
 
@@ -40,6 +41,7 @@ Opzioni:
                            AUTO).
   -V, --valgrind           utilizza Valgrind (se installato) per controllare
                            l'utilizzo della memoria.
+  -o, --output=RESUME|JSON seleziona il tipo di output.
   -h, --help               stampa questo messaggio ed esce.
 """
 
@@ -513,9 +515,9 @@ def check_result(result, target, flags, maxerrors=None):
 def parse_options():
     """Parse the command line."""
 
-    shortopts = "hc:t:v:m:C:V"
-    longopts = ["help", "config=", "verbosity=", "timeout=",
-                "max-errors=", "color=", "valgrind"]
+    shortopts = "hc:t:v:m:C:Vo:"
+    longopts = ["help", "config=", "timeout=", "verbosity=",
+                "max-errors=", "color=", "valgrind", "output="]
     try:
         opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err:
@@ -567,13 +569,20 @@ def parse_options():
         sys.exit(2)
     color = (color == "YES" or (color == "AUTO" and sys.stdout.isatty()))
 
+    output = optval('-o', '--output', 'resume', str).upper()
+    if output not in ("RESUME", "JSON"):
+        print(_("Invalid parameter ('%s')") % output)
+        sys.exit(2)
+
     valgrind = (True if '-V' in opts or '--valgrind' in opts else False)
     opts = dict(config=config,
                 verbosity=verbosity,
                 timeout=timeout,
                 maxerrors=maxerrors,
                 color=color,
-                valgrind=valgrind)
+                valgrind=valgrind,
+                output=output
+                )
 
     return (args, opts)
 
@@ -918,8 +927,10 @@ def main():
         dotest_out = dotest(testname, target, args, opts)
         global_out[testname] = dotest_out
 
-    print_resume(tests, global_out, args, opts)
-
+    if opts['output'] == 'RESUME':
+        print_resume(tests, global_out, args, opts)
+    elif opts['output'] == 'JSON':
+        print(global_out)
 
 if __name__ == '__main__':
     main()
