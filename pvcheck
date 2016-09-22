@@ -719,17 +719,6 @@ def dotest(testname, target, args, opts):
     output = output.decode('utf-8', errors='replace').split('\n')
     result = parse_results(output)
 
-    # Print a header for the test
-    if testname is not None:
-        if error_message is None:
-            log.info(_("TEST") + ": " + testname)
-        else:
-            fmt = "%s: %s (error: '%s')"
-            log.fatal(fmt % (_("TEST"), testname, error_message))
-    elif error_message is not None:
-        log.fatal(error_message)
-    log.info(_("COMMAND LINE") + ": " + " ".join(args[1:]))
-
     max_lines = (10000 if opts['verbosity'] >= 4 else 5)
     if input_text is not None:
         log_lines(_("INPUT"), input_text.splitlines(),
@@ -763,7 +752,20 @@ def dotest(testname, target, args, opts):
         else:
             summary[_("<valgrind>")] = ResultType.SUCCESS
 
-    return summary
+    return (summary, error_message)
+
+
+def print_header(testname, error_message, args):
+    """ Print a header for the test."""
+    if testname is not None:
+        if error_message is None:
+            log.info(_("TEST") + ": " + testname)
+        else:
+            fmt = "%s: %s (error: '%s')"
+            log.fatal(fmt % (_("TEST"), testname, error_message))
+    elif error_message is not None:
+        log.fatal(error_message)
+    log.info(_("COMMAND LINE") + ": " + " ".join(args[1:]))
 
 
 def main():
@@ -801,7 +803,8 @@ def main():
             first = False
         else:
             log.info('-' * 60)
-        results = dotest(testname, target, args, opts)
+        (results, error_message) = dotest(testname, target, args, opts)
+        print_header(testname, error_message, args)
         for sec in results:
             summary[sec][results[sec]] += 1
 
