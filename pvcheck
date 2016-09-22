@@ -464,13 +464,18 @@ def check_ordered(key, result, target, maxerrors=None):
             log.error(_("(... plus other %d errors ...)") %
                       (len(mm) - maxerrors),
                       extra={'section':key})
-        return ResultType.ERROR
+        rescode = ResultType.ERROR
     else:
         if len(result) > 0 and len(result) != len(target):
             log.warning(_("The first %d lines matched correctly") %
                         min(len(result), len(target)),
                         extra={'section':key})
-        return rescode
+    ret = {
+        'code': rescode,
+        'wrong lines': mm,
+        'tot lines': len(target)
+    }
+    return ret
 
 
 def check_result(result, target, flags, maxerrors=None):
@@ -482,26 +487,33 @@ def check_result(result, target, flags, maxerrors=None):
     """
     summary = {}
     res = {}
+    check_data = {}
     for (name, content) in result:
         res.setdefault(name, []).extend(content)
 
     for (key, t) in target:
         if key.startswith('.'):
             continue  # skip special sessions
+        check_data[key] = {}
         try:
             r = res[key]
         except KeyError:
             log.warning(_("missing section"), extra={'section':key})
             summary[key] = ResultType.WARNING
+            check_data[key]['section status'] = 'missing'
             continue
         if not r and t:
             log.error(_("empty section"), extra={'section':key})
             summary[key] = ResultType.ERROR
+            check_data[key]['section status'] = 'empty'
             continue
+        check_data[key]['section status'] = 'ok'
         if "unordered" in flags.get(key, ()):
             secresult = check_unordered(key, r, t, maxerrors)
         else:
-            secresult = check_ordered(key, r, t, maxerrors)
+            out = check_ordered(key, r, t, maxerrors)
+            secresult = out['code']
+        check_data[key]['secresult'] = out
         summary[key] = secresult
         if secresult == ResultType.SUCCESS:
             log.success(_("OK"), extra={'section':key})
@@ -509,7 +521,12 @@ def check_result(result, target, flags, maxerrors=None):
     extra = set(x[0] for x in result) - set(x[0] for x in target)
     for item in extra:
         log.debug(_("extra section"), extra={'section':item[0]})
-    return summary
+    check_data[key]['extra'] = extra
+    check_dict = {
+        'summary': summary,
+        'check_data': check_data
+    }
+    return check_dict
 
 
 ############################################################
@@ -723,11 +740,13 @@ def dotest(testname, target, args, opts):
 
     # Check the result
     if error_message is None:
-        summary = check_result(result, target, flags,
+        check_res_out = check_result(result, target, flags,
                                opts['maxerrors'])
+        summary = check_res_out['summary']
         summary[_("<program>")] = max(summary.values(),
                                       default=ResultType.SUCCESS)
     else:
+        out_dict = {}
         summary = {_("<program>"): ResultType.FATAL }
 
     if opts['valgrind']:
@@ -743,7 +762,8 @@ def dotest(testname, target, args, opts):
         'error_message': error_message,
         'input_text': input_text,
         'file_text': file_text,
-        'output': output
+        'output': output,
+        'check_res_out': check_res_out
     }
 
     return outDict
@@ -808,17 +828,21 @@ def main():
     tests = split_tests(cfg + target)
     first = True
     summary = defaultdict(Counter)
+    global_out = {}
     for (testname, target) in tests:
         if first:
             first = False
         else:
             log.info('-' * 60)
-        outDict = dotest(testname, target, args, opts)
-        results = outDict['summary']
-        error_message = outDict['error_message']
-        input_text = outDict['input_text']
-        file_text = outDict['file_text']
-        output = outDict['output']
+        dotest_out = dotest(testname, target, args, opts)
+
+        global_out[testname] = dotest_out
+
+        results = dotest_out['summary']
+        error_message = dotest_out['error_message']
+        input_text = dotest_out['input_text']
+        file_text = dotest_out['file_text']
+        output = dotest_out['output']
 
         print_header(testname, error_message, args)
         print_lines(input_text, file_text, output, opts)
