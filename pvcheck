@@ -719,20 +719,6 @@ def dotest(testname, target, args, opts):
     output = output.decode('utf-8', errors='replace').split('\n')
     result = parse_results(output)
 
-    max_lines = (10000 if opts['verbosity'] >= 4 else 5)
-    if input_text is not None:
-        log_lines(_("INPUT"), input_text.splitlines(),
-                  max_lines=max_lines)
-
-    if file_text is not None:
-        lines = file_text.splitlines()
-        log_lines(_("TEMPORARY FILE"), file_text.splitlines(),
-                  max_lines=max_lines)
-
-    log.debug(_("OUTPUT") + ":")
-    for line in output:
-        log.debug("> " + line)
-
     (verr, vwarn) = parse_valgrind(valgrind_report)
 
     # Check the result
@@ -754,7 +740,10 @@ def dotest(testname, target, args, opts):
 
     outDict = {
         'summary': summary,
-        'error_message': error_message
+        'error_message': error_message,
+        'input_text': input_text,
+        'file_text': file_text,
+        'output': output
     }
 
     return outDict
@@ -771,6 +760,22 @@ def print_header(testname, error_message, args):
     elif error_message is not None:
         log.fatal(error_message)
     log.info(_("COMMAND LINE") + ": " + " ".join(args[1:]))
+
+
+def print_lines(input_text, file_text, output, opts):
+    max_lines = (10000 if opts['verbosity'] >= 4 else 5)
+    if input_text is not None:
+        log_lines(_("INPUT"), input_text.splitlines(),
+                  max_lines=max_lines)
+
+    if file_text is not None:
+        lines = file_text.splitlines()
+        log_lines(_("TEMPORARY FILE"), file_text.splitlines(),
+                  max_lines=max_lines)
+
+    log.debug(_("OUTPUT") + ":")
+    for line in output:
+        log.debug("> " + line)
 
 
 def main():
@@ -811,7 +816,13 @@ def main():
         outDict = dotest(testname, target, args, opts)
         results = outDict['summary']
         error_message = outDict['error_message']
+        input_text = outDict['input_text']
+        file_text = outDict['file_text']
+        output = outDict['output']
+
         print_header(testname, error_message, args)
+        print_lines(input_text, file_text, output, opts)
+        
         for sec in results:
             summary[sec][results[sec]] += 1
 
