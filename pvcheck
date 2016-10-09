@@ -523,7 +523,7 @@ def check_result(result, target, flags, maxerrors=None):
         else:
             out = check_ordered(key, r, t, maxerrors)
             secresult = out['code']
-        check_data[key]['secresult'] = out
+        check_data[key].update(out)
         summary[key] = secresult
 
     extra = set(x[0] for x in result) - set(x[0] for x in target)
@@ -907,10 +907,10 @@ def print_resume(tests, global_out, args, opts):
         sections = dotest_out['check_res_out']['check_data']
         for key in sections:
             if sections[key]['section status'] == 'ok':
-                if sections[key]['secresult']['code'] == ResultType.SUCCESS:
+                if sections[key]['code'] == ResultType.SUCCESS:
                     log.success(_("OK"), extra={'section':key})
                 else:
-                    print_resume_ordered_check(key, sections[key]['secresult']['generated'], sections[key]['secresult']['expected'], maxerrors=None)
+                    print_resume_ordered_check(key, sections[key]['generated'], sections[key]['expected'], maxerrors=None)
             elif sections[key]['section status'] == 'missing':
                 log.warning(_("missing section"), extra={'section':key})
             elif sections[key]['section status'] == 'empty':
