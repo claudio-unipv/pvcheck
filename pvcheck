@@ -332,6 +332,14 @@ def split_tests(t):
     return ret
 
 
+def parse_wdiff_output(wd_str):
+    """Generic function to parse wdiff -s output"""
+    tokens = wd_str.split()
+    n1 = float(tokens[4][:-1])
+    n2 = float(tokens[15][:-1])
+    return (n1 + n2) / 2
+
+
 ############################################################
 # MATCHING
 ############################################################
@@ -474,7 +482,8 @@ def check_ordered(key, result, target, maxerrors=None):
     if len(result) != len(target):
         rescode = ResultType.ERROR
     mm = check_lines(result, target)
-    wd = check_wdiff(result, target)
+    wd_output = check_wdiff(result, target)
+    similarity = parse_wdiff_output(str(wd_output['output']))
     
     if len(mm) > 0:
         rescode = ResultType.ERROR
@@ -485,7 +494,7 @@ def check_ordered(key, result, target, maxerrors=None):
         'wrong lines': mm,
         'generated': result,
         'expected': target,
-        'wdiff': wd
+        'similarity': similarity
     }
     return ret
 
