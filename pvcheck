@@ -54,6 +54,7 @@ import getopt
 import re
 import logging
 import tempfile
+import json
 from itertools import count, zip_longest
 from collections import OrderedDict, Counter, defaultdict
 from functools import wraps
@@ -377,7 +378,7 @@ def check_wdiff(res, target):
         'code': p.returncode
     }
     if p.returncode <= 1:
-       ret['output'] = output
+       ret['output'] = str(output)
     else:
        ret['output'] = "Error occurred in wdiff"
     return ret
@@ -482,9 +483,8 @@ def check_ordered(key, result, target, maxerrors=None):
     ret = {
         'code': rescode,
         'wrong lines': mm,
-        'tot lines': len(target),
-        'result': result,
-        'target': target,
+        'generated': result,
+        'expected': target,
         'wdiff': wd
     }
     return ret
@@ -529,7 +529,7 @@ def check_result(result, target, flags, maxerrors=None):
     extra = set(x[0] for x in result) - set(x[0] for x in target)
     for item in extra:
         log.debug(_("extra section"), extra={'section':item[0]})
-    check_data[key]['extra'] = extra
+    check_data[key]['extra'] = list(extra)
     check_dict = {
         'summary': summary,
         'check_data': check_data
@@ -910,7 +910,7 @@ def print_resume(tests, global_out, args, opts):
                 if sections[key]['secresult']['code'] == ResultType.SUCCESS:
                     log.success(_("OK"), extra={'section':key})
                 else:
-                    print_resume_ordered_check(key, sections[key]['secresult']['result'], sections[key]['secresult']['target'], maxerrors=None)
+                    print_resume_ordered_check(key, sections[key]['secresult']['generated'], sections[key]['secresult']['expected'], maxerrors=None)
             elif sections[key]['section status'] == 'missing':
                 log.warning(_("missing section"), extra={'section':key})
             elif sections[key]['section status'] == 'empty':
@@ -952,14 +952,16 @@ def main():
     # Run the individual tests in the suite
     tests = split_tests(cfg + target)
     global_out = {}
-    for (testname, target) in tests:
+    for i, (testname, target) in enumerate(tests):
         dotest_out = dotest(testname, target, args, opts)
+        dotest_out['order'] = i
         global_out[testname] = dotest_out
 
     if opts['output'] == 'RESUME':
         print_resume(tests, global_out, args, opts)
     elif opts['output'] == 'JSON':
-        print(global_out)
+        s = json.dumps(global_out)
+        print(s)
 
 if __name__ == '__main__':
     main()
