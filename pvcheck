@@ -532,7 +532,7 @@ def check_result(result, target, flags, maxerrors=None):
     check_data[key]['extra'] = list(extra)
     check_dict = {
         'summary': summary,
-        'check_data': check_data
+        'sections': check_data
     }
     return check_dict
 
@@ -904,7 +904,7 @@ def print_resume(tests, global_out, args, opts):
         if error_message is not None:
             continue
 
-        sections = dotest_out['check_res_out']['check_data']
+        sections = dotest_out['check_res_out']['sections']
         for key in sections:
             if sections[key]['section status'] == 'ok':
                 if sections[key]['code'] == ResultType.SUCCESS:
