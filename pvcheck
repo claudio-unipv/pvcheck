@@ -761,7 +761,7 @@ def dotest(testname, target, args, opts):
         summary[_("<program>")] = max(summary.values(),
                                       default=ResultType.SUCCESS)
     else:
-        check_res_out = None   # TODO: maybe it is better assign {}
+        check_res_out = {}
         summary = {_("<program>"): ResultType.FATAL }
 
     if opts['valgrind']:
@@ -777,9 +777,9 @@ def dotest(testname, target, args, opts):
         'error_message': error_message,
         'input_text': input_text,
         'file_text': file_text,
-        'output': output,
-        'check_res_out': check_res_out,
+        'output': output
     }
+    outDict.update(check_res_out)
     if tmpfile is not None:
         outDict['input_file_name'] = tmpfile.name
     else:
@@ -904,7 +904,7 @@ def print_resume(tests, global_out, args, opts):
         if error_message is not None:
             continue
 
-        sections = dotest_out['check_res_out']['sections']
+        sections = dotest_out['sections']
         for key in sections:
             if sections[key]['section status'] == 'ok':
                 if sections[key]['code'] == ResultType.SUCCESS:
