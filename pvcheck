@@ -786,7 +786,8 @@ def dotest(testname, target, args, opts):
         'error_message': error_message,
         'input_text': input_text,
         'file_text': file_text,
-        'output': output
+        'output': output,
+        'valgrind': {'errors': verr, 'warnings': vwarn}
     }
     outDict.update(check_res_out)
     if tmpfile is not None:
