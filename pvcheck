@@ -58,8 +58,8 @@ import json
 from itertools import count, zip_longest
 from collections import OrderedDict, Counter, defaultdict
 from functools import wraps
-
-
+from os.path import expanduser
+import datetime
 
 ############################################################
 # INTERNATIONALIZATION
@@ -380,15 +380,21 @@ def check_wdiff(res, target):
     tmpfile2.write(file_text.encode('utf8'))
     tmpfile2.close()
 
-    p = Popen(['wdiff', '-s123', tmpfile1.name, tmpfile2.name], stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=-1)
-    output, error = p.communicate()
-    ret = {
-        'code': p.returncode
-    }
-    if p.returncode <= 1:
-       ret['output'] = str(output)
-    else:
-       ret['output'] = "Error occurred in wdiff"
+    ret = {}
+    try:
+        p = Popen(['wdiff', '-s123', tmpfile1.name, tmpfile2.name], stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=-1)
+        output, error = p.communicate()
+        ret['code'] = p.returncode
+        if p.returncode <= 1:
+           ret['output'] = str(output)
+        else:
+           ret['output'] = "Error occurred in wdiff"
+        log.debug("wdiff: " + str(((output, p.returncode))))
+    except FileNotFoundError:
+        log.debug("wdiff: command not found")
+        ret['code'] = -1
+        ret['output'] = "wdiff command not found"
+
     return ret
 
 
@@ -483,7 +489,10 @@ def check_ordered(key, result, target, maxerrors=None):
         rescode = ResultType.ERROR
     mm = check_lines(result, target)
     wd_output = check_wdiff(result, target)
-    similarity = parse_wdiff_output(str(wd_output['output']))
+    if wd_output['code'] in (0, 1):
+        similarity = parse_wdiff_output(str(wd_output['output']))
+    else:
+        similarity = None
     
     if len(mm) > 0:
         rescode = ResultType.ERROR
@@ -961,17 +970,27 @@ def main():
 
     # Run the individual tests in the suite
     tests = split_tests(cfg + target)
-    global_out = {}
+    all_tests = {}
     for i, (testname, target) in enumerate(tests):
         dotest_out = dotest(testname, target, args, opts)
         dotest_out['order'] = i
-        global_out[testname] = dotest_out
+        all_tests[testname] = dotest_out
 
+    global_out = {}
+    global_out['tests'] = all_tests
+    (dt, micro) = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f').split('.')
+    dt = "%s.%03d" % (dt, int(micro) / 1000)
+    global_out['created_at'] = dt
     if opts['output'] == 'RESUME':
-        print_resume(tests, global_out, args, opts)
+        print_resume(tests, all_tests, args, opts)
     elif opts['output'] == 'JSON':
         s = json.dumps(global_out)
         print(s)
+
+    # TODO: add option or config file to configure this logging faeture
+    home = expanduser("~")
+    with open(home + "/.pvcheck.log", "a") as logfile:
+        logfile.write(json.dumps(global_out) + '\n')
 
 if __name__ == '__main__':
     main()
