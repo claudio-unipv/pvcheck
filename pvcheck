@@ -696,7 +696,31 @@ def exist_section(sections, name):
         if secname == name:
             return True
     return False
-            
+
+
+def run_program(args, kwargs):
+    """Execute the process (program to test) and parse its output."""
+
+    error_message = None
+    try:
+        output = subprocess.check_output(args[1:], **kwargs)
+    except subprocess.TimeoutExpired as e:
+        error_message = _("TIMEOUT EXPIRED: PROCESS TERMINATED")
+        output = e.output
+    except subprocess.CalledProcessError as e:
+        if e.returncode == -signal.SIGSEGV:
+            error_message = _("PROCESS ENDED WITH A FAILURE")
+            error_message += " " + _("(SEGMENTATION FAULT)")
+        else:
+            error_message = _("PROCESS ENDED WITH A FAILURE")
+            error_message += " " + _("(ERROR CODE %d)") % e.returncode
+        output = e.output
+    except FileNotFoundError:
+        output = bytes()
+        error_message = _("FAILED TO RUN THE FILE '%s' ") % sys.argv[2]
+        error_message += _("(the file does not exist)")
+    return output, error_message
+
 
 def dotest(testname, target, args, opts):
     """Execute the process and verify its output against target."""
@@ -737,25 +761,7 @@ def dotest(testname, target, args, opts):
     else:
         valgrind_out = None
         
-    # Execute the process and parse its output
-    error_message = None
-    try:
-        output = subprocess.check_output(args[1:], **kwargs)
-    except subprocess.TimeoutExpired as e:
-        error_message = _("TIMEOUT EXPIRED: PROCESS TERMINATED")
-        output = e.output
-    except subprocess.CalledProcessError as e:
-        if e.returncode == -signal.SIGSEGV:
-            error_message = _("PROCESS ENDED WITH A FAILURE")
-            error_message += " " + _("(SEGMENTATION FAULT)")
-        else:
-            error_message = _("PROCESS ENDED WITH A FAILURE")
-            error_message += " " + _("(ERROR CODE %d)") % e.returncode
-        output = e.output
-    except FileNotFoundError:
-        output = bytes()
-        error_message = _("FAILED TO RUN THE FILE '%s' ") % sys.argv[2]
-        error_message += _("(the file does not exist)")
+    output, error_message = run_program(args, kwargs)
 
     if tmpfile is not None:
         os.remove(tmpfile.name)
