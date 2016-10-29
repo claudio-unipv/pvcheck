@@ -909,7 +909,6 @@ def print_resume(all_tests, args, opts):
     for i, test in enumerate(all_tests):
         if i > 0:
             log.info('-' * 60)
-        results = test['summary']
         error_message = test['error_message']
         input_text = test['input_text']
         file_text = test['file_text']
@@ -922,15 +921,15 @@ def print_resume(all_tests, args, opts):
             continue
 
         sections = test['sections']
-        for key in sections:
-            if sections[key]['section status'] == 'ok':
-                if sections[key]['code'] == ResultType.SUCCESS:
+        for key, sect in sections.items():
+            if sect['section status'] == 'ok':
+                if sect['code'] == ResultType.SUCCESS:
                     log.success(_("OK"), extra={'section':key})
                 else:
-                    print_resume_ordered_check(key, sections[key]['generated'], sections[key]['expected'], maxerrors=None)
-            elif sections[key]['section status'] == 'missing':
+                    print_resume_ordered_check(key, sect['generated'], sect['expected'], maxerrors=None)
+            elif sect['section status'] == 'missing':
                 log.warning(_("missing section"), extra={'section':key})
-            elif sections[key]['section status'] == 'empty':
+            elif sect['section status'] == 'empty':
                 log.error(_("empty section"), extra={'section':key})
             else:
                 log.error(_("Internal Error: wrong section status"), extra={'section':key})
