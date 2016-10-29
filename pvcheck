@@ -13,6 +13,7 @@ Options:
   -c, --config=FILE        uses the specified configuration file.
   -C, --color=YES|NO|AUTO  enable or disable colored output (default AUTO).
   -V, --valgrind           use Valgrind (if installed) to check memory usage.
+  -o, --output=RESUME|JSON select the output type.
   -h, --help               print this message and exit.
 """
 
@@ -40,10 +41,14 @@ Opzioni:
                            AUTO).
   -V, --valgrind           utilizza Valgrind (se installato) per controllare
                            l'utilizzo della memoria.
+  -o, --output=RESUME|JSON seleziona il tipo di output.
   -h, --help               stampa questo messaggio ed esce.
 """
 
+JSON_FORMAT_VER = '2.0.0'
+
 import subprocess
+from subprocess import Popen, PIPE
 import signal
 import os
 import sys
@@ -51,11 +56,12 @@ import getopt
 import re
 import logging
 import tempfile
+import json
 from itertools import count, zip_longest
 from collections import OrderedDict, Counter, defaultdict
 from functools import wraps
-
-
+from os.path import expanduser
+import datetime
 
 ############################################################
 # INTERNATIONALIZATION
@@ -328,6 +334,14 @@ def split_tests(t):
     return ret
 
 
+def parse_wdiff_output(wd_str):
+    """Generic function to parse wdiff -s output"""
+    tokens = wd_str.split()
+    n1 = float(tokens[4][:-1])
+    n2 = float(tokens[15][:-1])
+    return (n1 + n2) / 2
+
+
 ############################################################
 # MATCHING
 ############################################################
@@ -353,6 +367,37 @@ def check_element(r, t):
     else:
         # In the general case just compare the strings.
         return (r == t)
+
+
+def check_wdiff(res, target):
+    file_text = ("\n".join(res))
+    tmpfile1 = tempfile.NamedTemporaryFile(suffix=".res.pvcheck.tmp",
+                                          delete=False)
+    tmpfile1.write(file_text.encode('utf8'))
+    tmpfile1.close()
+
+    file_text = ("\n".join(target))
+    tmpfile2 = tempfile.NamedTemporaryFile(suffix=".target.pvcheck.tmp",
+                                          delete=False)
+    tmpfile2.write(file_text.encode('utf8'))
+    tmpfile2.close()
+
+    ret = {}
+    try:
+        p = Popen(['wdiff', '-s123', tmpfile1.name, tmpfile2.name], stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=-1)
+        output, error = p.communicate()
+        ret['code'] = p.returncode
+        if p.returncode <= 1:
+           ret['output'] = str(output)
+        else:
+           ret['output'] = "Error occurred in wdiff"
+        log.debug("wdiff: " + str(((output, p.returncode))))
+    except FileNotFoundError:
+        log.debug("wdiff: command not found")
+        ret['code'] = -1
+        ret['output'] = "wdiff command not found"
+
+    return ret
 
 
 def check_line(res, target):
@@ -441,36 +486,28 @@ def check_ordered(key, result, target, maxerrors=None):
     fmt = "%-30s| %-30s"
     log.debug(_("detailed comparison"), extra={'section':key})
     log.debug(fmt % (_("EXPECTED OUTPUT"), _("ACTUAL OUTPUT")))
-    for t, r in zip_longest(target, result):
-        st = (t.rstrip() if t is not None else _("<nothing>"))
-        sr = (r.rstrip() if r is not None else _("<nothing>"))
-        if len(st) > 30:
-            st = st[:26] + "..."
-        if len(sr) > 30:
-            sr = sr[:26] + "..."
-        log.debug(fmt % (st, sr))
 
     if len(result) != len(target):
-        fmt = _("wrong number of lines (expected %d, got %d)")
-        log.error(fmt % (len(target), len(result)),
-                  extra={'section':key})
         rescode = ResultType.ERROR
     mm = check_lines(result, target)
-    if len(mm) > 0:
-        fmt = _("line %d is wrong  (expected '%s', got '%s')")
-        for (n, got, exp) in mm[:maxerrors]:
-            log.error(fmt % (n+1, exp, got), extra={'section':key})
-        if len(mm) > maxerrors:
-            log.error(_("(... plus other %d errors ...)") %
-                      (len(mm) - maxerrors),
-                      extra={'section':key})
-        return ResultType.ERROR
+    wd_output = check_wdiff(result, target)
+    if wd_output['code'] in (0, 1):
+        similarity = parse_wdiff_output(str(wd_output['output']))
     else:
-        if len(result) > 0 and len(result) != len(target):
-            log.warning(_("The first %d lines matched correctly") %
-                        min(len(result), len(target)),
-                        extra={'section':key})
-        return rescode
+        similarity = None
+    
+    if len(mm) > 0:
+        rescode = ResultType.ERROR
+    else:
+        pass
+    ret = {
+        'code': rescode,
+        'wrong lines': mm,
+        'generated': result,
+        'expected': target,
+        'similarity': similarity
+    }
+    return ret
 
 
 def check_result(result, target, flags, maxerrors=None):
@@ -482,34 +519,42 @@ def check_result(result, target, flags, maxerrors=None):
     """
     summary = {}
     res = {}
+    check_data = {}
     for (name, content) in result:
         res.setdefault(name, []).extend(content)
 
     for (key, t) in target:
         if key.startswith('.'):
             continue  # skip special sessions
+        check_data[key] = {}
         try:
             r = res[key]
         except KeyError:
-            log.warning(_("missing section"), extra={'section':key})
             summary[key] = ResultType.WARNING
+            check_data[key]['section status'] = 'missing'
             continue
         if not r and t:
-            log.error(_("empty section"), extra={'section':key})
             summary[key] = ResultType.ERROR
+            check_data[key]['section status'] = 'empty'
             continue
+        check_data[key]['section status'] = 'ok'
         if "unordered" in flags.get(key, ()):
             secresult = check_unordered(key, r, t, maxerrors)
         else:
-            secresult = check_ordered(key, r, t, maxerrors)
+            out = check_ordered(key, r, t, maxerrors)
+            secresult = out['code']
+        check_data[key].update(out)
         summary[key] = secresult
-        if secresult == ResultType.SUCCESS:
-            log.success(_("OK"), extra={'section':key})
 
     extra = set(x[0] for x in result) - set(x[0] for x in target)
     for item in extra:
         log.debug(_("extra section"), extra={'section':item[0]})
-    return summary
+    check_data[key]['extra'] = list(extra)
+    check_dict = {
+        'summary': summary,
+        'sections': check_data
+    }
+    return check_dict
 
 
 ############################################################
@@ -519,9 +564,9 @@ def check_result(result, target, flags, maxerrors=None):
 def parse_options():
     """Parse the command line."""
 
-    shortopts = "hc:t:v:m:C:V"
-    longopts = ["help", "config=", "verbosity=", "timeout=",
-                "max-errors=", "color=", "valgrind"]
+    shortopts = "hc:t:v:m:C:Vo:"
+    longopts = ["help", "config=", "timeout=", "verbosity=",
+                "max-errors=", "color=", "valgrind", "output="]
     try:
         opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err:
@@ -573,13 +618,20 @@ def parse_options():
         sys.exit(2)
     color = (color == "YES" or (color == "AUTO" and sys.stdout.isatty()))
 
+    output = optval('-o', '--output', 'resume', str).upper()
+    if output not in ("RESUME", "JSON"):
+        print(_("Invalid parameter ('%s')") % output)
+        sys.exit(2)
+
     valgrind = (True if '-V' in opts or '--valgrind' in opts else False)
     opts = dict(config=config,
                 verbosity=verbosity,
                 timeout=timeout,
                 maxerrors=maxerrors,
                 color=color,
-                valgrind=valgrind)
+                valgrind=valgrind,
+                output=output
+                )
 
     return (args, opts)
 
@@ -719,7 +771,46 @@ def dotest(testname, target, args, opts):
     output = output.decode('utf-8', errors='replace').split('\n')
     result = parse_results(output)
 
-    # Print a header for the test
+    (verr, vwarn) = parse_valgrind(valgrind_report)
+
+    # Check the result
+    if error_message is None:
+        check_res_out = check_result(result, target, flags,
+                               opts['maxerrors'])
+        summary = check_res_out['summary']
+        summary[_("<program>")] = max(summary.values(),
+                                      default=ResultType.SUCCESS)
+    else:
+        check_res_out = {}
+        summary = {_("<program>"): ResultType.FATAL }
+
+    if opts['valgrind']:
+        if verr > 0:
+            summary[_("<valgrind>")] = ResultType.ERROR
+        elif vwarn > 0:
+            summary[_("<valgrind>")] = ResultType.WARNING
+        else:
+            summary[_("<valgrind>")] = ResultType.SUCCESS
+
+    outDict = {
+        'summary': summary,
+        'error_message': error_message,
+        'input_text': input_text,
+        'file_text': file_text,
+        'output': output,
+        'valgrind': {'errors': verr, 'warnings': vwarn}
+    }
+    outDict.update(check_res_out)
+    if tmpfile is not None:
+        outDict['input_file_name'] = tmpfile.name
+    else:
+        outDict['input_file_name'] = args[2] if len(args) > 2 else ""
+
+    return outDict
+
+
+def print_header(testname, error_message, input_file_name, args):
+    """ Print a header for the test."""
     if testname is not None:
         if error_message is None:
             log.info(_("TEST") + ": " + testname)
@@ -728,8 +819,10 @@ def dotest(testname, target, args, opts):
             log.fatal(fmt % (_("TEST"), testname, error_message))
     elif error_message is not None:
         log.fatal(error_message)
-    log.info(_("COMMAND LINE") + ": " + " ".join(args[1:]))
+    log.info(_("COMMAND LINE") + ": " + " ".join(args[1:]) + " " + str(input_file_name))
 
+
+def print_lines(input_text, file_text, output, opts):
     max_lines = (10000 if opts['verbosity'] >= 4 else 5)
     if input_text is not None:
         log_lines(_("INPUT"), input_text.splitlines(),
@@ -744,26 +837,107 @@ def dotest(testname, target, args, opts):
     for line in output:
         log.debug("> " + line)
 
-    (verr, vwarn) = parse_valgrind(valgrind_report)
 
-    # Check the result
-    if error_message is None:
-        summary = check_result(result, target, flags,
-                               opts['maxerrors'])
-        summary[_("<program>")] = max(summary.values(),
-                                      default=ResultType.SUCCESS)
+def print_final_summary(tests):
+    summary = defaultdict(Counter)
+    for test in tests:
+        results = test['summary']
+        for sec in results:
+            summary[sec][results[sec]] += 1
+
+    log.info('')
+    log.info("=" * 60)
+    log.info('')
+    log.info(_("SUMMARY"))
+    for k in sorted(summary):
+        errs = (summary[k][ResultType.ERROR] +
+                summary[k][ResultType.FATAL])
+        fmt = "%s:  \t%d %s,\t%d %s,\t %d %s"
+        a = [k]
+        a += [summary[k][ResultType.SUCCESS], _("successes")]
+        a += [summary[k][ResultType.WARNING], _("warnings")]
+        a += [errs, _("errors")]
+        log.info(fmt % tuple(a))
+    log.info('')
+
+
+def print_resume_ordered_check(key, result, target, maxerrors=None):
+    """Line by line comparison of result and target.
+
+    Print messages to show matches and mismatches.
+    """
+    if maxerrors is None:
+        maxerrors = len(result) + len(target)
+    rescode = ResultType.SUCCESS
+
+    fmt = "%-30s| %-30s"
+    log.debug(_("detailed comparison"), extra={'section':key})
+    log.debug(fmt % (_("EXPECTED OUTPUT"), _("ACTUAL OUTPUT")))
+    for t, r in zip_longest(target, result):
+        st = (t.rstrip() if t is not None else _("<nothing>"))
+        sr = (r.rstrip() if r is not None else _("<nothing>"))
+        if len(st) > 30:
+            st = st[:26] + "..."
+        if len(sr) > 30:
+            sr = sr[:26] + "..."
+        log.debug(fmt % (st, sr))
+
+    if len(result) != len(target):
+        fmt = _("wrong number of lines (expected %d, got %d)")
+        log.error(fmt % (len(target), len(result)),
+                  extra={'section':key})
+        rescode = ResultType.ERROR
+    mm = check_lines(result, target)
+    if len(mm) > 0:
+        fmt = _("line %d is wrong  (expected '%s', got '%s')")
+        for (n, got, exp) in mm[:maxerrors]:
+            log.error(fmt % (n+1, exp, got), extra={'section':key})
+        if len(mm) > maxerrors:
+            log.error(_("(... plus other %d errors ...)") %
+                      (len(mm) - maxerrors),
+                      extra={'section':key})
+        rescode = ResultType.ERROR
     else:
-        summary = {_("<program>"): ResultType.FATAL }
+        if len(result) > 0 and len(result) != len(target):
+            log.warning(_("The first %d lines matched correctly") %
+                        min(len(result), len(target)),
+                        extra={'section':key})
 
-    if opts['valgrind']:
-        if verr > 0:
-            summary[_("<valgrind>")] = ResultType.ERROR
-        elif vwarn > 0:
-            summary[_("<valgrind>")] = ResultType.WARNING
-        else:
-            summary[_("<valgrind>")] = ResultType.SUCCESS
 
-    return summary
+def print_resume(all_tests, args, opts):
+    """ Print the resume."""
+    for i, test in enumerate(all_tests):
+        if i > 0:
+            log.info('-' * 60)
+        results = test['summary']
+        error_message = test['error_message']
+        input_text = test['input_text']
+        file_text = test['file_text']
+        output = test['output']
+
+        print_header(test['title'], error_message, test['input_file_name'], args)
+        print_lines(input_text, file_text, output, opts)
+        
+        if error_message is not None:
+            continue
+
+        sections = test['sections']
+        for key in sections:
+            if sections[key]['section status'] == 'ok':
+                if sections[key]['code'] == ResultType.SUCCESS:
+                    log.success(_("OK"), extra={'section':key})
+                else:
+                    print_resume_ordered_check(key, sections[key]['generated'], sections[key]['expected'], maxerrors=None)
+            elif sections[key]['section status'] == 'missing':
+                log.warning(_("missing section"), extra={'section':key})
+            elif sections[key]['section status'] == 'empty':
+                log.error(_("empty section"), extra={'section':key})
+            else:
+                log.error(_("Internal Error: wrong section status"), extra={'section':key})
+
+    # In the case of multiple tests print a summary
+    if len(all_tests) > 1:
+        print_final_summary(all_tests)
 
 
 def main():
@@ -794,33 +968,29 @@ def main():
 
     # Run the individual tests in the suite
     tests = split_tests(cfg + target)
-    first = True
-    summary = defaultdict(Counter)
-    for (testname, target) in tests:
-        if first:
-            first = False
-        else:
-            log.info('-' * 60)
-        results = dotest(testname, target, args, opts)
-        for sec in results:
-            summary[sec][results[sec]] += 1
+    all_tests = []
+    for i, (testname, target) in enumerate(tests):
+        dotest_out = dotest(testname, target, args, opts)
+        dotest_out['title'] = testname
+        all_tests.append(dotest_out)
 
-    # In the case of multiple tests print a summary
-    if len(tests) > 1:
-        log.info('')
-        log.info("=" * 60)
-        log.info('')
-        log.info(_("SUMMARY"))
-        for k in sorted(summary):
-            errs = (summary[k][ResultType.ERROR] +
-                    summary[k][ResultType.FATAL])
-            fmt = "%s:  \t%d %s,\t%d %s,\t %d %s"
-            a = [k]
-            a += [summary[k][ResultType.SUCCESS], _("successes")]
-            a += [summary[k][ResultType.WARNING], _("warnings")]
-            a += [errs, _("errors")]
-            log.info(fmt % tuple(a))
-        log.info('')
+    global_out = {}
+
+    global_out['tests'] = all_tests
+    (dt, micro) = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f').split('.')
+    dt = "%s.%03d" % (dt, int(micro) / 1000)
+    global_out['created_at'] = dt
+    global_out['version'] = JSON_FORMAT_VER
+    if opts['output'] == 'RESUME':
+        print_resume(all_tests, args, opts)
+    elif opts['output'] == 'JSON':
+        s = json.dumps(global_out)
+        print(s)
+
+    # TODO: add option or config file to configure this logging faeture
+    home = expanduser("~")
+    with open(home + "/.pvcheck.log", "a") as logfile:
+        logfile.write(json.dumps(global_out) + '\n')
 
 if __name__ == '__main__':
     main()
