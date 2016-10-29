@@ -722,6 +722,15 @@ def run_program(args, kwargs):
     return output, error_message
 
 
+def valgrind_output_code(verr, vwarn):
+    if verr > 0:
+        return ResultType.ERROR
+    elif vwarn > 0:
+        return ResultType.WARNING
+    else:
+        return ResultType.SUCCESS
+
+
 def dotest(testname, target, args, opts):
     """Execute the process and verify its output against target."""
 
@@ -753,6 +762,8 @@ def dotest(testname, target, args, opts):
     kwargs = dict(input=input_bytes,
                   timeout=opts['timeout'])
 
+    outDict = {}
+
     if opts['valgrind']:
         args.insert(1, "valgrind")
         valgrind_out = tempfile.NamedTemporaryFile(suffix=".pvcheck.valgrind",
@@ -762,10 +773,12 @@ def dotest(testname, target, args, opts):
         valgrind_out.close()
         with open(valgrind_out.name, "rt") as f:
             valgrind_report = [x for x in f]
+        (verr, vwarn) = parse_valgrind(valgrind_report)
+        summary[_("<valgrind>")] = valgrind_output_code(verr, vwarn)
+        outDict['valgrind'] = {'errors': verr, 'warnings': vwarn}
         os.remove(valgrind_out.name)
     else:
         output, error_message = run_program(args, kwargs)
-        valgrind_report = []
         
     output = output.decode('utf-8', errors='replace').split('\n')
     result = parse_results(output)
@@ -781,33 +794,19 @@ def dotest(testname, target, args, opts):
         check_res_out = {}
         summary = {_("<program>"): ResultType.FATAL }
 
-    outDict = {
-        'summary': summary,
-        'error_message': error_message,
-        'input_text': input_text,
-        'file_text': file_text,
-        'output': output,
-    }
+    outDict['summary'] = summary
+    outDict['error_message'] = error_message
+    outDict['input_text'] = input_text
+    outDict['file_text'] = file_text
+    outDict['output'] = output
     outDict.update(check_res_out)
-
-    if opts['valgrind']:
-        (verr, vwarn) = parse_valgrind(valgrind_report)
-        if verr > 0:
-            summary[_("<valgrind>")] = ResultType.ERROR
-        elif vwarn > 0:
-            summary[_("<valgrind>")] = ResultType.WARNING
-        else:
-            summary[_("<valgrind>")] = ResultType.SUCCESS
-        outDict['valgrind'] = {'errors': verr, 'warnings': vwarn}
 
     if tmpfile is not None:
         outDict['input_file_name'] = tmpfile.name
+        os.remove(tmpfile.name)
     else:
         outDict['input_file_name'] = args[2] if len(args) > 2 else ""
 
-    if tmpfile is not None:
-        os.remove(tmpfile.name)
-        
     return outDict
 
 
