@@ -45,6 +45,8 @@ Opzioni:
   -h, --help               stampa questo messaggio ed esce.
 """
 
+JSON_FORMAT_VER = '1.0.0'
+
 import subprocess
 from subprocess import Popen, PIPE
 import signal
@@ -981,6 +983,7 @@ def main():
     (dt, micro) = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f').split('.')
     dt = "%s.%03d" % (dt, int(micro) / 1000)
     global_out['created_at'] = dt
+    global_out['version'] = JSON_FORMAT_VER
     if opts['output'] == 'RESUME':
         print_resume(tests, all_tests, args, opts)
     elif opts['output'] == 'JSON':
