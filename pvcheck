@@ -802,7 +802,7 @@ def dotest(testname, target, args, opts):
     if tmpfile is not None:
         outDict['input_file_name'] = tmpfile.name
     else:
-        outDict['input_file_name'] = args[2]
+        outDict['input_file_name'] = args[2] if len(args) > 2 else ""
 
     return outDict
 
