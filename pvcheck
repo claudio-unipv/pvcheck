@@ -771,8 +771,6 @@ def dotest(testname, target, args, opts):
     output = output.decode('utf-8', errors='replace').split('\n')
     result = parse_results(output)
 
-    (verr, vwarn) = parse_valgrind(valgrind_report)
-
     # Check the result
     if error_message is None:
         check_res_out = check_result(result, target, flags,
@@ -784,23 +782,25 @@ def dotest(testname, target, args, opts):
         check_res_out = {}
         summary = {_("<program>"): ResultType.FATAL }
 
-    if opts['valgrind']:
-        if verr > 0:
-            summary[_("<valgrind>")] = ResultType.ERROR
-        elif vwarn > 0:
-            summary[_("<valgrind>")] = ResultType.WARNING
-        else:
-            summary[_("<valgrind>")] = ResultType.SUCCESS
-
     outDict = {
         'summary': summary,
         'error_message': error_message,
         'input_text': input_text,
         'file_text': file_text,
         'output': output,
-        'valgrind': {'errors': verr, 'warnings': vwarn}
     }
     outDict.update(check_res_out)
+
+    if opts['valgrind']:
+        (verr, vwarn) = parse_valgrind(valgrind_report)
+        if verr > 0:
+            summary[_("<valgrind>")] = ResultType.ERROR
+        elif vwarn > 0:
+            summary[_("<valgrind>")] = ResultType.WARNING
+        else:
+            summary[_("<valgrind>")] = ResultType.SUCCESS
+        outDict['valgrind'] = {'errors': verr, 'warnings': vwarn}
+
     if tmpfile is not None:
         outDict['input_file_name'] = tmpfile.name
     else:
