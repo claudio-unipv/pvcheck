@@ -904,9 +904,9 @@ def print_resume_ordered_check(key, result, target, maxerrors=None):
                         extra={'section':key})
 
 
-def print_resume(tests, global_out, args, opts):
+def print_resume(all_tests, args, opts):
     """ Print the resume."""
-    for i, test in enumerate(global_out):
+    for i, test in enumerate(all_tests):
         if i > 0:
             log.info('-' * 60)
         results = test['summary']
@@ -936,8 +936,8 @@ def print_resume(tests, global_out, args, opts):
                 log.error(_("Internal Error: wrong section status"), extra={'section':key})
 
     # In the case of multiple tests print a summary
-    if len(tests) > 1:
-        print_final_summary(global_out)
+    if len(all_tests) > 1:
+        print_final_summary(all_tests)
 
 
 def main():
@@ -982,7 +982,7 @@ def main():
     global_out['created_at'] = dt
     global_out['version'] = JSON_FORMAT_VER
     if opts['output'] == 'RESUME':
-        print_resume(tests, all_tests, args, opts)
+        print_resume(all_tests, args, opts)
     elif opts['output'] == 'JSON':
         s = json.dumps(global_out)
         print(s)
