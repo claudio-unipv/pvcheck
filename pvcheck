@@ -45,7 +45,7 @@ Opzioni:
   -h, --help               stampa questo messaggio ed esce.
 """
 
-JSON_FORMAT_VER = '1.0.0'
+JSON_FORMAT_VER = '2.0.0'
 
 import subprocess
 from subprocess import Popen, PIPE
@@ -771,8 +771,6 @@ def dotest(testname, target, args, opts):
     output = output.decode('utf-8', errors='replace').split('\n')
     result = parse_results(output)
 
-    (verr, vwarn) = parse_valgrind(valgrind_report)
-
     # Check the result
     if error_message is None:
         check_res_out = check_result(result, target, flags,
@@ -784,23 +782,25 @@ def dotest(testname, target, args, opts):
         check_res_out = {}
         summary = {_("<program>"): ResultType.FATAL }
 
-    if opts['valgrind']:
-        if verr > 0:
-            summary[_("<valgrind>")] = ResultType.ERROR
-        elif vwarn > 0:
-            summary[_("<valgrind>")] = ResultType.WARNING
-        else:
-            summary[_("<valgrind>")] = ResultType.SUCCESS
-
     outDict = {
         'summary': summary,
         'error_message': error_message,
         'input_text': input_text,
         'file_text': file_text,
         'output': output,
-        'valgrind': {'errors': verr, 'warnings': vwarn}
     }
     outDict.update(check_res_out)
+
+    if opts['valgrind']:
+        (verr, vwarn) = parse_valgrind(valgrind_report)
+        if verr > 0:
+            summary[_("<valgrind>")] = ResultType.ERROR
+        elif vwarn > 0:
+            summary[_("<valgrind>")] = ResultType.WARNING
+        else:
+            summary[_("<valgrind>")] = ResultType.SUCCESS
+        outDict['valgrind'] = {'errors': verr, 'warnings': vwarn}
+
     if tmpfile is not None:
         outDict['input_file_name'] = tmpfile.name
     else:
@@ -840,8 +840,8 @@ def print_lines(input_text, file_text, output, opts):
 
 def print_final_summary(tests):
     summary = defaultdict(Counter)
-    for testname in tests:
-        results = tests[testname]['summary']
+    for test in tests:
+        results = test['summary']
         for sec in results:
             summary[sec][results[sec]] += 1
 
@@ -904,44 +904,39 @@ def print_resume_ordered_check(key, result, target, maxerrors=None):
                         extra={'section':key})
 
 
-def print_resume(tests, global_out, args, opts):
+def print_resume(all_tests, args, opts):
     """ Print the resume."""
-    first = True
-    for (testname, target) in tests:
-        if first:
-            first = False
-        else:
+    for i, test in enumerate(all_tests):
+        if i > 0:
             log.info('-' * 60)
-        dotest_out = global_out[testname]
-        results = dotest_out['summary']
-        error_message = dotest_out['error_message']
-        input_text = dotest_out['input_text']
-        file_text = dotest_out['file_text']
-        output = dotest_out['output']
+        error_message = test['error_message']
+        input_text = test['input_text']
+        file_text = test['file_text']
+        output = test['output']
 
-        print_header(testname, error_message, dotest_out['input_file_name'], args)
+        print_header(test['title'], error_message, test['input_file_name'], args)
         print_lines(input_text, file_text, output, opts)
         
         if error_message is not None:
             continue
 
-        sections = dotest_out['sections']
-        for key in sections:
-            if sections[key]['section status'] == 'ok':
-                if sections[key]['code'] == ResultType.SUCCESS:
+        sections = test['sections']
+        for key, sect in sections.items():
+            if sect['section status'] == 'ok':
+                if sect['code'] == ResultType.SUCCESS:
                     log.success(_("OK"), extra={'section':key})
                 else:
-                    print_resume_ordered_check(key, sections[key]['generated'], sections[key]['expected'], maxerrors=None)
-            elif sections[key]['section status'] == 'missing':
+                    print_resume_ordered_check(key, sect['generated'], sect['expected'], maxerrors=None)
+            elif sect['section status'] == 'missing':
                 log.warning(_("missing section"), extra={'section':key})
-            elif sections[key]['section status'] == 'empty':
+            elif sect['section status'] == 'empty':
                 log.error(_("empty section"), extra={'section':key})
             else:
                 log.error(_("Internal Error: wrong section status"), extra={'section':key})
 
     # In the case of multiple tests print a summary
-    if len(tests) > 1:
-        print_final_summary(global_out)
+    if len(all_tests) > 1:
+        print_final_summary(all_tests)
 
 
 def main():
@@ -972,20 +967,21 @@ def main():
 
     # Run the individual tests in the suite
     tests = split_tests(cfg + target)
-    all_tests = {}
+    all_tests = []
     for i, (testname, target) in enumerate(tests):
         dotest_out = dotest(testname, target, args, opts)
-        dotest_out['order'] = i
-        all_tests[testname] = dotest_out
+        dotest_out['title'] = testname
+        all_tests.append(dotest_out)
 
     global_out = {}
+
     global_out['tests'] = all_tests
     (dt, micro) = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f').split('.')
     dt = "%s.%03d" % (dt, int(micro) / 1000)
     global_out['created_at'] = dt
     global_out['version'] = JSON_FORMAT_VER
     if opts['output'] == 'RESUME':
-        print_resume(tests, all_tests, args, opts)
+        print_resume(all_tests, args, opts)
     elif opts['output'] == 'JSON':
         s = json.dumps(global_out)
         print(s)
