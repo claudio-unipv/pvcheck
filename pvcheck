@@ -758,19 +758,15 @@ def dotest(testname, target, args, opts):
         valgrind_out = tempfile.NamedTemporaryFile(suffix=".pvcheck.valgrind",
                                                    delete=False)
         kwargs['stderr'] = valgrind_out
-    else:
-        valgrind_out = None
-        
-    output, error_message = run_program(args, kwargs)
-
-    if valgrind_out is not None:
+        output, error_message = run_program(args, kwargs)
         valgrind_out.close()
         with open(valgrind_out.name, "rt") as f:
             valgrind_report = [x for x in f]
         os.remove(valgrind_out.name)
     else:
+        output, error_message = run_program(args, kwargs)
         valgrind_report = []
-
+        
     output = output.decode('utf-8', errors='replace').split('\n')
     result = parse_results(output)
 
