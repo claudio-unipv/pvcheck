@@ -763,9 +763,6 @@ def dotest(testname, target, args, opts):
         
     output, error_message = run_program(args, kwargs)
 
-    if tmpfile is not None:
-        os.remove(tmpfile.name)
-        
     if valgrind_out is not None:
         valgrind_out.close()
         with open(valgrind_out.name, "rt") as f:
@@ -812,6 +809,9 @@ def dotest(testname, target, args, opts):
     else:
         outDict['input_file_name'] = args[2] if len(args) > 2 else ""
 
+    if tmpfile is not None:
+        os.remove(tmpfile.name)
+        
     return outDict
 
 
