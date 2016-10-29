@@ -45,7 +45,7 @@ Opzioni:
   -h, --help               stampa questo messaggio ed esce.
 """
 
-JSON_FORMAT_VER = '1.0.0'
+JSON_FORMAT_VER = '2.0.0'
 
 import subprocess
 from subprocess import Popen, PIPE
@@ -840,8 +840,8 @@ def print_lines(input_text, file_text, output, opts):
 
 def print_final_summary(tests):
     summary = defaultdict(Counter)
-    for testname in tests:
-        results = tests[testname]['summary']
+    for test in tests:
+        results = test['summary']
         for sec in results:
             summary[sec][results[sec]] += 1
 
@@ -906,20 +906,17 @@ def print_resume_ordered_check(key, result, target, maxerrors=None):
 
 def print_resume(tests, global_out, args, opts):
     """ Print the resume."""
-    first = True
-    for (testname, target) in tests:
-        if first:
-            first = False
-        else:
+    for i, test in enumerate(global_out):
+        if i > 0:
             log.info('-' * 60)
-        dotest_out = global_out[testname]
+        dotest_out = test
         results = dotest_out['summary']
         error_message = dotest_out['error_message']
         input_text = dotest_out['input_text']
         file_text = dotest_out['file_text']
         output = dotest_out['output']
 
-        print_header(testname, error_message, dotest_out['input_file_name'], args)
+        print_header(test['title'], error_message, dotest_out['input_file_name'], args)
         print_lines(input_text, file_text, output, opts)
         
         if error_message is not None:
@@ -972,13 +969,14 @@ def main():
 
     # Run the individual tests in the suite
     tests = split_tests(cfg + target)
-    all_tests = {}
+    all_tests = []
     for i, (testname, target) in enumerate(tests):
         dotest_out = dotest(testname, target, args, opts)
-        dotest_out['order'] = i
-        all_tests[testname] = dotest_out
+        dotest_out['title'] = testname
+        all_tests.append(dotest_out)
 
     global_out = {}
+
     global_out['tests'] = all_tests
     (dt, micro) = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f').split('.')
     dt = "%s.%03d" % (dt, int(micro) / 1000)
