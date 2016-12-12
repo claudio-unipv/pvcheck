@@ -13,8 +13,10 @@ from collections import OrderedDict, Counter, defaultdict
 from functools import wraps
 import datetime
 
-import i18n
 import match
+import parser
+import testdata
+import i18n
 
 __doc__ = i18n.HELP_en
 
@@ -118,45 +120,6 @@ class ResultType:
 
 
 
-
-############################################################
-# PARSING
-############################################################
-
-
-def parse_results(f):
-    """Parse the lines in f and return the content divided in sections.
-
-    file -> [ (secname, [lines]) ]
-    """
-    ret = []
-    section = None
-    for line in f:
-        l = line.strip()
-        if not l or l[0] == '#':
-            continue  # Skip empty lines and comments
-        if "[" in l and l.endswith("]"):
-            # A new section
-            st = l.rfind("[")
-            section = l[(st+1):-1].strip().upper()
-            ret.append((section, []))
-        elif section is not None:
-            ret[-1][1].append(line)
-    return ret
-
-
-def group_sections_by_name(sections, name):
-    """Return the content fo all sections with the given name.
-
-    [ (secname, [ lines]) ] -> [ lines ]
-    """
-    ret = []
-    for (secname, lines) in sections:
-        if secname == name:
-            ret.extend(lines)
-    return ret
-
-
 def interpret_section_flags(lines):
     """Interpret the sequence lines as flags related to sections.
 
@@ -168,36 +131,6 @@ def interpret_section_flags(lines):
         if toks:
             flags.setdefault(toks[0], []).extend(toks[1:])
     return flags
-
-
-def split_tests(t):
-    """Split the sections in t into a sequence of multiple named tests.
-
-    Everything preceding the first test is replicated for each test.
-
-    [ (secname, [ line ]) ] -> [ (testname, [ (secname, [ line ]) ]) ]
-    """
-    def grouper(t):
-        testname = None
-        test = []
-        n = 0
-        for (secname, lines) in t:
-            if secname == '.TEST':
-                yield (testname, test)
-                n += 1
-                testname = (lines[0].strip() if lines
-                        else ("Test-%d" % n))
-                test = []
-            else:
-                test.append((secname, lines))
-        yield (testname, test)
-
-    it = iter(grouper(t))
-    pre = next(it)
-    ret = [(r[0], pre[1] + r[1]) for r in it]
-    if not ret:
-        ret = [pre]
-    return ret
 
 
 ############################################################
@@ -393,19 +326,19 @@ def exist_section(sections, name):
         if secname == name:
             return True
     return False
-            
+
 
 def dotest(testname, target, args, opts):
     """Execute the process and verify its output against target."""
 
-    if exist_section(target, ".INPUT"):    
+    if exist_section(target, ".INPUT"):
         input_text = ("".join(group_sections_by_name(target, ".INPUT")))
         input_bytes = input_text.encode('utf8')
     else:
         input_text = None
         input_bytes = bytes()
 
-    if exist_section(target, ".FILE"):    
+    if exist_section(target, ".FILE"):
         file_text = ("".join(group_sections_by_name(target, ".FILE")))
         tmpfile = tempfile.NamedTemporaryFile(suffix=".pvcheck.tmp",
                                               delete=False)
@@ -422,7 +355,7 @@ def dotest(testname, target, args, opts):
         args = [(a if a != ".FILE" else tmpfile.name) for a in args]
 
     flags = interpret_section_flags(group_sections_by_name(target, ".SECTIONS"))
- 
+
     kwargs = dict(input=input_bytes,
                   timeout=opts['timeout'])
 
@@ -433,7 +366,7 @@ def dotest(testname, target, args, opts):
         kwargs['stderr'] = valgrind_out
     else:
         valgrind_out = None
-        
+
     # Execute the process and parse its output
     error_message = None
     try:
@@ -456,7 +389,7 @@ def dotest(testname, target, args, opts):
 
     if tmpfile is not None:
         os.remove(tmpfile.name)
-        
+
     if valgrind_out is not None:
         valgrind_out.close()
         with open(valgrind_out.name, "rt") as f:
@@ -613,7 +546,7 @@ def print_resume(all_tests, args, opts):
 
         print_header(test['title'], error_message, test['input_file_name'], args)
         print_lines(input_text, file_text, output, opts)
-        
+
         if error_message is not None:
             continue
 
@@ -649,7 +582,7 @@ def main():
     else:
         try:
             with open(cfgfile, "rt") as f:
-                cfg = parse_results(f)
+                cfg = list(parser.parse_sections(f))
         except FileNotFoundError as e:
             print(e)
             sys.exit(1)
@@ -657,14 +590,22 @@ def main():
     # Parse the expected output from the given file
     try:
         with open(args[0], "rt") as f:
-            target = parse_results(f)
+            target = list(parser.parse_sections(f))
     except FileNotFoundError as e:
         print(e)
         sys.exit(1)
 
+    suite = testdata.TestSuite(cfg + target)
+    sys.exit(0)  ### !!!
+
     # Run the individual tests in the suite
-    tests = split_tests(cfg + target)
+    for test in suite:
+        dotest(test, args, opts)
+
+    #### !!!!! TO BE CONTINUED ...
+
     all_tests = []
+    # Run the individual tests in the suite
     for i, (testname, target) in enumerate(tests):
         dotest_out = dotest(testname, target, args, opts)
         dotest_out['title'] = testname
