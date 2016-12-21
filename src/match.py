@@ -206,3 +206,108 @@ def check_ordered(key, lines, target, maxerrors=None):
         'similarity': similarity
     }
     return ret
+
+######################################################################
+
+from collections import namedtuple
+from itertools import zip_longest
+
+MatchingPair = namedtuple("MatchingPair",
+                          ["actual_index", "expected_index", "difference"])
+
+
+class MatchingResult:
+    def __init__(self, actual_lines, expected_lines, pairs):
+        self.actual_lines = actual_lines
+        self.expected_lines = expected_lines
+        self.pairs = pairs
+
+
+def _match_element(value, target):
+    """Compare single elements.
+
+    Return true if value matches target.  The type of comparison
+    (numerical with a set precision or textual) is inferred from the
+    target value.
+
+    """
+    m = RE_REAL.fullmatch(target)
+    if m is not None:
+        # If the target is a fractional number, compare the result up
+        # to the given number of digits.
+        digits = len(m.group('frac'))
+        try:
+            return float(target) == round(float(value), digits)
+        except ValueError:
+            return False
+    elif RE_INT.fullmatch(target):
+        # If the target is an integer, compare by value so that 15,
+        # +15 and 015 are considered as equivalent.
+        try:
+            return int(target) == int(value)
+        except ValueError:
+            return False
+    else:
+        # In the general case just compare the strings.
+        return (value == target)
+        
+        
+def _line_difference(actual, expected):
+    act = actual.split()
+    exp = expected.split()
+    ok = sum(1 for a, e in zip(act, exp) if _match_element(a, e))
+    den = max(len(act), len(exp))
+    return float(den - ok) / max(den, 1)
+
+
+def _match_section_ordered(actual, expected):
+    return [MatchingPair(i, i, (1.0 if x[0] is None or x[1] is None
+                                else _line_difference(x[0], x[1])))
+            for (i, x) in enumerate(zip_longest(actual, expected))]
+
+
+def _match_section_unordered(actual, expected):
+    t = set(enumerate(expected))
+    result = []
+    for (i, x) in enumerate(actual):
+        for (j, y) in t:
+            if _line_difference(x, y) == 0:
+                result.append(MatchingPair(i, j, 0.0))
+                t.remove((j, y))
+                break
+        else:
+            result.append(MatchingPair(i, None, 1.0))
+    for (j, y) in t:
+        result.append(MatchingPair(None, j, 1.0))
+    return result
+        
+
+def match_lines(actual, expected, ordered=True):
+    """Match two list of text lines."""
+    match_fun = (_match_section_ordered if ordered
+                 else _match_section_unordered)
+    diffs = match_fun(actual, expected)
+    return MatchingResult(actual, expected, diffs)
+    
+
+if __name__ == '__main__':
+    actual = ["1", "2 3", "4 5 6", "7 8 9 10"]
+    expected = ["1", "2 4", "04 +5 6", ""]
+    def idx(l, i):
+        return ("<none>" if i is None else l[i])
+    res = match_lines(actual, expected)
+    for m in res.pairs:
+        print("%s\t%s\t%f" % (idx(res.actual_lines, m.actual_index),
+                              idx(res.expected_lines, m.expected_index),
+                              m.difference))
+    print()
+    import random
+    random.shuffle(actual)
+    random.shuffle(expected)
+    res = match_lines(actual, expected, False)
+    for m in res.pairs:
+        print("%s\t%s\t%f" % (idx(res.actual_lines, m.actual_index),
+                              idx(res.expected_lines, m.expected_index),
+                              m.difference))
+    print()
+    
