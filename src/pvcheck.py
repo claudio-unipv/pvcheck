@@ -166,13 +166,26 @@ def check_result(result, target, flags, maxerrors=None):
             check_data[key]['section status'] = 'empty'
             continue
         check_data[key]['section status'] = 'ok'
-        if "unordered" in flags.get(key, ()):
-            num_errs = match.check_unordered_section(key, r, t, maxerrors)
-            secresult = (ResultType.ERROR if num_errs > 0
-                         else ResultType.SUCCESS)
-        else:
-            out = match.check_ordered(key, r, t, maxerrors)
-            secresult = out['code']
+
+        ordered = ("unordered" not in flags.get(key, ()))
+        diffs, matches = match.compare_sections(r, t, ordered)
+        
+        ### !!!! To be fixed
+
+        secresult = (ResultType.SUCCESS if max(diffs) == 0
+                     else ResultType.ERROR)
+
+        sym = float(len(diffs) - sum(diffs)) / max(len(diffs), 1)
+        wrong = [(i, rr, tt) for (i, d, rr, tt) in
+                 zip(count(), diffs, r, matches) if d > 0]
+        out = {
+            'code': secresult
+            'wrong lines': wrong,
+            'generated': r,
+            'expected': t,
+            'similarity': sym
+        }
+        
         check_data[key].update(out)
         summary[key] = secresult
 
@@ -624,7 +637,7 @@ def main():
         s = json.dumps(global_out)
         print(s)
 
-    # TODO: add option or config file to configure this logging faeture
+    # TODO: add option or config file to configure this logging feature
     home = os.path.expanduser("~")
     with open(home + "/.pvcheck.log", "a") as logfile:
         logfile.write(json.dumps(global_out) + '\n')
