@@ -1,0 +1,70 @@
+>>> from testdata import *
+
+>>> s = Section('name', ['line1', 'line2'])
+>>> s
+Section('name')
+>>> s.content
+['line1', 'line2']
+
+>>> s.copy()
+Section('name')
+
+
+
+>>> t = TestCase('desc', [s])
+>>> t.description
+'desc'
+>>> t._sections
+[Section('name')]
+
+>>> t = TestCase()
+>>> t.description is None
+True
+>>> t._sections
+[]
+
+
+
+>>> list(TestSuite([s]))  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+[<testdata.TestCase object at 0x...>]
+
+
+>>> list(TestSuite([s, s]))  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+[<testdata.TestCase object at 0x...>]
+
+
+>>> l = list(TestSuite([
+...		    Section('.TEST', ['test1']),
+...                 Section('AAA', ['line1', 'line2']),
+...    		    Section('BBB', ['line3'])
+...                   ]))
+>>> len(l)
+1
+>>> l[0].description
+'test1'
+>>> l[0]._sections
+[Section('AAA'), Section('BBB')]
+
+
+>>> l = list(TestSuite([
+...                 Section('AAA', ['pre1', 'pre2', 'pre3']),
+...		    Section('.TEST', ['test1']),
+...                 Section('AAA', ['line1', 'line2']),
+...    		    Section('BBB', ['line3']),
+...		    Section('.TEST', ['test2']),
+...    		    Section('BBB', ['line4'])
+...                    ]))
+>>> len(l)
+2
+>>> l[0].description
+'test1'
+>>> l[0]._sections
+[Section('AAA'), Section('BBB')]
+>>> l[0]._sections[0].content
+['pre1', 'pre2', 'pre3', 'line1', 'line2']
+>>> l[1].description
+'test2'
+>>> l[1]._sections
+[Section('AAA'), Section('BBB')]
+>>> l[1]._sections[0].content
+['pre1', 'pre2', 'pre3']

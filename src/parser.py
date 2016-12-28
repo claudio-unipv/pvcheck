@@ -2,7 +2,7 @@ import re
 import testdata
 
 
-RE_HEADER = re.compile(r"\s*\[\s*(?P<tag>[._a-zA-Z][._\w]*)\s*\]\s*")
+_RE_HEADER = re.compile(r"\s*\[\s*(?P<tag>[._a-zA-Z][._\w]*)\s*\]\s*")
 
 
 def parse_sections(f):
@@ -18,7 +18,7 @@ def parse_sections(f):
         l = line.strip()
         if not l or l[0] == '#':
             continue  # Skip empty lines and comments
-        m = RE_HEADER.match(line)
+        m = _RE_HEADER.match(line)
         if m:
             if tag != "" or len(content) > 0:
                 yield testdata.Section(tag, content)
@@ -27,4 +27,10 @@ def parse_sections(f):
             content = []
         else:
             content.append(line)
-    yield testdata.Section(tag, content)
+    if tag != "" or len(content) > 0:
+        yield testdata.Section(tag, content)
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testfile("../test/parser.txt")

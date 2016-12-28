@@ -1,0 +1,47 @@
+>>> from parser import *
+
+>>> l = list(parse_sections('''[SIMPLE]
+... line1
+... line2
+... '''.splitlines()))
+>>> l
+[Section('SIMPLE')]
+
+
+>>> l[0].content
+['line1', 'line2']
+
+
+>>> list(parse_sections('''[SECTION1]
+... line1
+... [SECTION2]
+... line2
+... '''.splitlines()))
+[Section('SECTION1'), Section('SECTION2')]
+
+
+>>> l = list(parse_sections('''line1
+... line2
+... line3
+...
+... [SECTION]
+... line4
+... '''.splitlines()))
+>>> l
+[Section(''), Section('SECTION')]
+>>> l[0].content
+['line1', 'line2', 'line3']
+
+
+>>> l = list(parse_sections('''
+... [EMPTY]
+... 
+... '''.splitlines()))
+>>> l
+[Section('EMPTY')]
+>>> l[0].content
+[]
+
+
+>>> list(parse_sections(''))
+[]

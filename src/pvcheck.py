@@ -179,7 +179,7 @@ def check_result(result, target, flags, maxerrors=None):
         wrong = [(i, rr, tt) for (i, d, rr, tt) in
                  zip(count(), diffs, r, matches) if d > 0]
         out = {
-            'code': secresult
+            'code': secresult,
             'wrong lines': wrong,
             'generated': r,
             'expected': t,

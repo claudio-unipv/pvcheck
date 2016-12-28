@@ -12,7 +12,7 @@ class Section:
 
     def copy(self):
         return Section(self.tag, self.content[:])
-        
+
     def __repr__(self):
         return ("Section('%s')" % self.tag)
 
@@ -23,7 +23,7 @@ class TestCase:
         self.description = description
         self._sections = ([] if sections is None else sections)
 
-        
+
 class TestSuite:
     """A set of test cases.
 
@@ -62,7 +62,7 @@ class TestSuite:
         Duplicated sections are merged.
 
         """
-       
+
         for case in self._cases:
             sects = OrderedDict()
             for s in chain(self._prefix, case._sections):
@@ -70,4 +70,9 @@ class TestSuite:
                     sects[s.tag] = s.copy()
                 else:
                     sects[s.tag].content.extend(s.content)
-            yield TestCase(case.description, list(sects))
+            yield TestCase(case.description, list(sects.values()))
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testfile("../test/testdata.txt")
