@@ -21,7 +21,13 @@ class TestCase:
     """A test case with an optional description."""
     def __init__(self, description=None, sections=None):
         self.description = description
-        self._sections = ([] if sections is None else sections)
+        self.sections = ([] if sections is None else sections)
+
+    def find_section(self, tag, default=None):
+        for s in self.sections:
+            if s.tag == tag:
+                return s
+        return default
 
 
 class TestSuite:
@@ -43,7 +49,7 @@ class TestSuite:
                 desc = (s.content[0].strip() if len(s.content) > 0
                         else "Test-%d" % (len(self._cases) + 1))
                 self._cases.append(TestCase(desc))
-                dest = self._cases[-1]._sections
+                dest = self._cases[-1].sections
             else:
                 # Extend the current test case, or the prefix
                 dest.append(s)
@@ -52,7 +58,7 @@ class TestSuite:
             # When no test is found, the prefix becomes a single
             # unnamed test case.
             self._cases.append(TestCase(None))
-            self._cases[-1]._sections = self._prefix
+            self._cases[-1].sections = self._prefix
             self._prefix = []
 
     def __iter__(self):
@@ -65,7 +71,7 @@ class TestSuite:
 
         for case in self._cases:
             sects = OrderedDict()
-            for s in chain(self._prefix, case._sections):
+            for s in chain(self._prefix, case.sections):
                 if s.tag not in sects:
                     sects[s.tag] = s.copy()
                 else:

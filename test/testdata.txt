@@ -14,13 +14,13 @@ Section('name')
 >>> t = TestCase('desc', [s])
 >>> t.description
 'desc'
->>> t._sections
+>>> t.sections
 [Section('name')]
 
 >>> t = TestCase()
 >>> t.description is None
 True
->>> t._sections
+>>> t.sections
 []
 
 
@@ -42,7 +42,7 @@ True
 1
 >>> l[0].description
 'test1'
->>> l[0]._sections
+>>> l[0].sections
 [Section('AAA'), Section('BBB')]
 
 
@@ -58,13 +58,13 @@ True
 2
 >>> l[0].description
 'test1'
->>> l[0]._sections
+>>> l[0].sections
 [Section('AAA'), Section('BBB')]
->>> l[0]._sections[0].content
+>>> l[0].sections[0].content
 ['pre1', 'pre2', 'pre3', 'line1', 'line2']
 >>> l[1].description
 'test2'
->>> l[1]._sections
+>>> l[1].sections
 [Section('AAA'), Section('BBB')]
->>> l[1]._sections[0].content
+>>> l[1].sections[0].content
 ['pre1', 'pre2', 'pre3']

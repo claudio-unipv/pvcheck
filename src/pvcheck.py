@@ -17,6 +17,7 @@ import match
 import parser
 import testdata
 import i18n
+import executor
 
 __doc__ = i18n.HELP_en
 
@@ -320,6 +321,7 @@ def log_lines(header, lines, max_lines=None):
     is given).
 
     """
+    ####### !!!!!!!!!!!!
     if max_lines is None:
         max_lines = len(lines)
     if len(lines) == 1:
@@ -335,13 +337,42 @@ def log_lines(header, lines, max_lines=None):
 
 def exist_section(sections, name):
     """Check if a section exists."""
-    for (secname, lines) in sections:
-        if secname == name:
-            return True
-    return False
+    ## !!!!!!
+    return name in set(s.tag for s in sections)
 
 
-def dotest(testname, target, args, opts):
+def check_output(test, output):
+    answers = list(parser.parse_sections(output.splitlines()))
+    print ("???", answers)
+    for s in test.sections:
+        if s.tag.startswith('.'):
+            continue  # skip special sections
+        for ans in answers:
+            if ans.tag == s.tag:
+                ## !!! ordered
+                diffs, matches = match.compare_sections(ans.content, s.content)
+                print(diffs, matches)  # !!!
+        else:
+            pass  # !!! warning missing section...
+        
+        
+def dotest(test, args, opts):
+    """Execute the process and verify it according to the test case."""
+
+    input = test.find_section(".INPUT", "")
+    tmpfile = test.find_section(".FILE")
+    args = list(args)
+    args.extend(map(str.strip, test.find_section(".ARGS", [])))
+    timeout = opts['timeout']
+
+    exec_result = executor.exec_process(args, input, tmpfile=tmpfile,
+                                        timeout=timeout)
+    print("!!!", exec_result)
+
+    check_output(test, exec_result.output)
+    
+    
+def dotest_(testname, target, args, opts):
     """Execute the process and verify its output against target."""
 
     if exist_section(target, ".INPUT"):
@@ -454,15 +485,14 @@ def dotest(testname, target, args, opts):
 
 def print_header(testname, error_message, input_file_name, args):
     """ Print a header for the test."""
-    if testname is not None:
-        if error_message is None:
-            log.info(_("TEST") + ": " + testname)
-        else:
-            fmt = "%s: %s (error: '%s')"
-            log.fatal(fmt % (_("TEST"), testname, error_message))
-    elif error_message is not None:
+    fmt = formatter.TextFormatter()
+    print("!!!!!!")
+    fmt.begin_test(testname, args + [input_file_name], None, None) 
+
+    #### !!! MOVE ELSEWHERE !!!
+    
+    if error_message is not None:
         log.fatal(error_message)
-    log.info(_("COMMAND LINE") + ": " + " ".join(args[1:]) + " " + str(input_file_name))
 
 
 def print_lines(input_text, file_text, output, opts):
@@ -609,12 +639,13 @@ def main():
         sys.exit(1)
 
     suite = testdata.TestSuite(cfg + target)
-    sys.exit(0)  ### !!!
 
     # Run the individual tests in the suite
     for test in suite:
-        dotest(test, args, opts)
+        dotest(test, args[1:], opts)
 
+    sys.exit(0)
+        
     #### !!!!! TO BE CONTINUED ...
 
     all_tests = []

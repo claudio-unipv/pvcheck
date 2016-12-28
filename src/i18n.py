@@ -21,6 +21,7 @@ import atexit
 ############################################################
 
 def translate(text):
+    """Translate the text in the current language."""
     try:
         return _strings[text]
     except KeyError:
