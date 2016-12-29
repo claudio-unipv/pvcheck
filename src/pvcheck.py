@@ -1,29 +1,70 @@
-#!/usr/bin/env python3
+"""Main PvCheck class."""
 
 import subprocess
 import signal
 import os
 import sys
-import getopt
 import logging
 import tempfile
 import json
 from itertools import count, zip_longest
-from collections import OrderedDict, Counter, defaultdict
-from functools import wraps
+from collections import Counter, defaultdict
 import datetime
 
 import match
 import parser
 import testdata
-import i18n
 import executor
+from i18n import translate as _
 
-__doc__ = i18n.HELP_en
 
-_ = i18n.translate
+class PvCheck:
+    """Main class that runs the tests."""
 
-JSON_FORMAT_VER = '2.0.0'
+    def __init__(self, formatter):
+        self._fmt = formatter
+
+    def exec_suite(self, suite, args, opts):
+        """Verify the program with a collection of test cases."""
+        for test in suite:
+            self.exec_test(test, args, opts)
+
+    def exec_test(self, test, args, opts):
+        """Run the program and verify it according to the test case."""
+        input = test.find_section(".INPUT", "")
+        tmpfile = test.find_section(".FILE")
+        args = list(args)
+        args.extend(map(str.strip, test.find_section(".ARGS", [])))
+        timeout = opts['timeout']
+
+        self._fmt.begin_test(test.description, args, input, tmpfile)
+        
+        exec_result = executor.exec_process(
+            args, input, tmpfile=tmpfile,
+            timeout=timeout
+        )
+        self._fmt.execution_result(args, exec_result)
+
+        self._check_output(test, exec_result.output)
+
+    def _check_output(self, test, output):
+        answers = list(parser.parse_sections(output.splitlines()))
+        for s in test.sections:
+            if s.tag.startswith('.'):
+                continue  # skip special sections
+            for ans in answers:
+                if ans.tag == s.tag:
+                    ## !!! ordered
+                    diffs, matches = match.compare_sections(
+                        ans.content, s.content
+                    )
+                    print(diffs, matches)  # !!!
+            else:
+                pass  # !!! warning missing section...
+
+
+
+JSON_FORMAT_VER = '2.0.0'   # !!!!!!!!
 
 
 ############################################################
@@ -205,80 +246,6 @@ def check_result(result, target, flags, maxerrors=None):
 # DRIVER
 ############################################################
 
-def parse_options():
-    """Parse the command line."""
-
-    shortopts = "hc:t:v:m:C:Vo:"
-    longopts = ["help", "config=", "timeout=", "verbosity=",
-                "max-errors=", "color=", "valgrind", "output="]
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
-    except getopt.GetoptError as err:
-        print(str(err))
-        print(_(i18n.USAGE_en))
-        sys.exit(2)
-    opts = dict(opts)
-
-    if '-h' in opts or '--help' in opts:
-        print(_(i18n.USAGE_en))
-        print()
-        print(_(i18n.HELP_en))
-        sys.exit(0)
-
-    if len(args) < 2:
-        print(_(i18n.USAGE_en))
-        sys.exit(2)
-
-    def optval(key1, key2, default=None, result_type=None):
-        x = opts.get(key1, opts.get(key2, default))
-        if result_type is None:
-            return x
-        try:
-            return result_type(x)
-        except ValueError as err:
-            print(_("Invalid parameter ('%s')") % x)
-            sys.exit(2)
-
-    verbosity = optval('-v', '--verbosity', '3', int)
-    if verbosity < 0 or verbosity > 4:
-        print(_("Invalid parameter ('%d')") % verbosity)
-        sys.exit(2)
-
-    timeout = optval('-t', '--timeout', '10', float)
-    if timeout < 0:
-        print(_("Invalid parameter ('%f')") % timeout)
-        sys.exit(2)
-
-    maxerrors = optval('-m', '--max-errors', '4', int)
-    if maxerrors < 0:
-        print(_("Invalid parameter ('%d')") % maxerrors)
-        sys.exit(2)
-
-    config = optval('-c', '--config', '', str)
-
-    color = optval('-C', '--color', 'AUTO', str).upper()
-    if color not in ("YES", "NO", "AUTO"):
-        print(_("Invalid parameter ('%s')") % color)
-        sys.exit(2)
-    color = (color == "YES" or (color == "AUTO" and sys.stdout.isatty()))
-
-    output = optval('-o', '--output', 'resume', str).upper()
-    if output not in ("RESUME", "JSON"):
-        print(_("Invalid parameter ('%s')") % output)
-        sys.exit(2)
-
-    valgrind = (True if '-V' in opts or '--valgrind' in opts else False)
-    opts = dict(config=config,
-                verbosity=verbosity,
-                timeout=timeout,
-                maxerrors=maxerrors,
-                color=color,
-                valgrind=valgrind,
-                output=output
-                )
-
-    return (args, opts)
-
 
 def parse_valgrind(report):
     """Analyse the report by Valgrind and log the result."""
@@ -341,35 +308,8 @@ def exist_section(sections, name):
     return name in set(s.tag for s in sections)
 
 
-def check_output(test, output):
-    answers = list(parser.parse_sections(output.splitlines()))
-    print ("???", answers)
-    for s in test.sections:
-        if s.tag.startswith('.'):
-            continue  # skip special sections
-        for ans in answers:
-            if ans.tag == s.tag:
-                ## !!! ordered
-                diffs, matches = match.compare_sections(ans.content, s.content)
-                print(diffs, matches)  # !!!
-        else:
-            pass  # !!! warning missing section...
         
-        
-def dotest(test, args, opts):
-    """Execute the process and verify it according to the test case."""
 
-    input = test.find_section(".INPUT", "")
-    tmpfile = test.find_section(".FILE")
-    args = list(args)
-    args.extend(map(str.strip, test.find_section(".ARGS", [])))
-    timeout = opts['timeout']
-
-    exec_result = executor.exec_process(args, input, tmpfile=tmpfile,
-                                        timeout=timeout)
-    print("!!!", exec_result)
-
-    check_output(test, exec_result.output)
     
     
 def dotest_(testname, target, args, opts):
@@ -613,39 +553,7 @@ def print_resume(all_tests, args, opts):
 
 
 def main():
-    (args, opts) = parse_options()
-    lvl = [logging.ERROR, logging.WARNING, logging.INFO,
-           SUCCESS, logging.DEBUG][opts['verbosity']]
-    setup_logging(lvl, opts['color'])
-
-    # Parse the configuration file (if given)
-    cfgfile = opts['config']
-    if not cfgfile:
-        cfg = []
-    else:
-        try:
-            with open(cfgfile, "rt") as f:
-                cfg = list(parser.parse_sections(f))
-        except FileNotFoundError as e:
-            print(e)
-            sys.exit(1)
-
-    # Parse the expected output from the given file
-    try:
-        with open(args[0], "rt") as f:
-            target = list(parser.parse_sections(f))
-    except FileNotFoundError as e:
-        print(e)
-        sys.exit(1)
-
-    suite = testdata.TestSuite(cfg + target)
-
-    # Run the individual tests in the suite
-    for test in suite:
-        dotest(test, args[1:], opts)
-
-    sys.exit(0)
-        
+       
     #### !!!!! TO BE CONTINUED ...
 
     all_tests = []

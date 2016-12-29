@@ -38,7 +38,7 @@ def translate(text):
 USAGE_en = ("Usage: pvcheck [OPTIONS]... TEST_FILE EXECUTABLE " +
             "[EXECUTABLE_PARAMS]...")
 
-HELP_en = """Run tests to check the correctness of a program.
+HELP_en = """Run tests to verify the correctness of a program.
 
 Options:
   -v, --verbosity=L        set the verbosity level, where the level must be
@@ -114,8 +114,8 @@ _translations = {
         "TIMEOUT EXPIRED: PROCESS TERMINATED":"TEMPO LIMITE SCADUTO: PROCESSO TERMINATO",
         "PROCESS ENDED WITH A FAILURE": "PROCESSO TERMINATO CON UN FALLIMENTO",
         "(SEGMENTATION FAULT)": "(SEGMENTATION FAULT)",
-        "(ERROR CODE %d)": "(CODICE D'ERRORE %d)",
-        "FAILED TO RUN THE FILE '%s' ": "IMPOSSIBILE ESEGUIRE IL FILE '%s' ",
+        "(ERROR CODE {status})": "(CODICE D'ERRORE {status})",
+        "FAILED TO RUN THE FILE '{progname}'": "IMPOSSIBILE ESEGUIRE IL FILE '{progname}'",
         "(the file does not exist)": "(file inesistente)",
         "(... plus other %d lines ...)": "(... più altre %d righe ...)",
         "SUMMARY": "RIEPILOGO",
