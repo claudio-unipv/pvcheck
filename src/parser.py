@@ -26,7 +26,7 @@ def parse_sections(f):
             tag = m.group("tag")
             content = []
         else:
-            content.append(line)
+            content.append(line.rstrip())
     if tag != "" or len(content) > 0:
         yield testdata.Section(tag, content)
 

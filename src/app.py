@@ -106,7 +106,7 @@ def main():
 
     fmt = formatter.TextFormatter(verbosity=opts['verbosity'])
     pvc = pvcheck.PvCheck(fmt)
-    pvc.exec_suite(suite, args[1:], opts)   # !!! opts
+    pvc.exec_suite(suite, args[1:], timeout=opts['timeout'])
 
 
 if __name__ == '__main__':

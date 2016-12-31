@@ -1,5 +1,7 @@
 >>> from testdata import *
 
+
+### Section
 >>> s = Section('name', ['line1', 'line2'])
 >>> s
 Section('name')
@@ -10,61 +12,85 @@ Section('name')
 Section('name')
 
 
-
+### TestCase
 >>> t = TestCase('desc', [s])
 >>> t.description
 'desc'
->>> t.sections
+>>> t.sections()
 [Section('name')]
-
 >>> t = TestCase()
 >>> t.description is None
 True
->>> t.sections
+>>> t.sections()
 []
+>>> t.add_section(Section('A', ['line1']))
+>>> t.sections()
+[Section('A')]
+>>> t.add_section(Section('A', ['line2']))
+>>> t.sections()
+[Section('A')]
+>>> t.sections()[0].content
+['line1', 'line2']
+>>> t.add_section(Section('.C', []))
+>>> t.find_section('A')
+Section('A')
+>>> t.find_section_content('A')
+'line1\nline2\n'
+>>> t.find_section('B') is None
+True
+>>> t.find_section_content('B', 'nothing')
+'nothing'
+>>> t.sections()
+[Section('A'), Section('.C')]
+>>> t.sections(exclude_special=True)
+[Section('A')]
+>>> t.add_section(Section('.SECTIONS', ['A x y z']))
+>>> t.add_section(Section('.SECTIONS', ['.C a b']))
+>>> t.section_options('A') == set(('x', 'y', 'z'))
+True
+>>> t.section_options('.C') == set(('a', 'b'))
+True
 
 
-
->>> list(TestSuite([s]))  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+# TestSuite
+>>> TestSuite([s]).test_cases()  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
 [<testdata.TestCase object at 0x...>]
 
 
->>> list(TestSuite([s, s]))  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+>>> TestSuite([s, s]).test_cases()  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
 [<testdata.TestCase object at 0x...>]
 
 
->>> l = list(TestSuite([
-...		    Section('.TEST', ['test1']),
-...                 Section('AAA', ['line1', 'line2']),
-...    		    Section('BBB', ['line3'])
-...                   ]))
+>>> l = TestSuite([Section('.TEST', ['test1']),
+...                Section('AAA', ['line1', 'line2']),
+...    		   Section('BBB', ['line3'])
+...               ]).test_cases()
 >>> len(l)
 1
 >>> l[0].description
 'test1'
->>> l[0].sections
+>>> l[0].sections()
 [Section('AAA'), Section('BBB')]
 
 
->>> l = list(TestSuite([
-...                 Section('AAA', ['pre1', 'pre2', 'pre3']),
-...		    Section('.TEST', ['test1']),
-...                 Section('AAA', ['line1', 'line2']),
-...    		    Section('BBB', ['line3']),
-...		    Section('.TEST', ['test2']),
-...    		    Section('BBB', ['line4'])
-...                    ]))
+>>> l = TestSuite([Section('AAA', ['pre1', 'pre2', 'pre3']),
+...		   Section('.TEST', ['test1']),
+...                Section('AAA', ['line1', 'line2']),
+...    		   Section('BBB', ['line3']),
+...		   Section('.TEST', ['test2']),
+...    		   Section('BBB', ['line4'])
+...               ]).test_cases()
 >>> len(l)
 2
 >>> l[0].description
 'test1'
->>> l[0].sections
+>>> l[0].sections()
 [Section('AAA'), Section('BBB')]
->>> l[0].sections[0].content
+>>> l[0].sections()[0].content
 ['pre1', 'pre2', 'pre3', 'line1', 'line2']
 >>> l[1].description
 'test2'
->>> l[1].sections
+>>> l[1].sections()
 [Section('AAA'), Section('BBB')]
->>> l[1].sections[0].content
+>>> l[1].sections()[0].content
 ['pre1', 'pre2', 'pre3']

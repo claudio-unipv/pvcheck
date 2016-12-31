@@ -82,49 +82,55 @@ Opzioni:
 _strings = {}
 _missing_translation = set()
 _lang = 'en'
+
+_it_strings = """
+ERROR $ ERRORE
+OK $ OK
+WARNING! $ ATTENZIONE!
+COMMAND LINE $ RIGA DI COMANDO
+INPUT $ INPUT
+OUTPUT $ OUTPUT
+TEMPORARY FILE $ FILE TEMPORANEO
+TEST $ TEST
+line %d $  riga %d
+(expected '%s' $  (atteso '%s'
+, got '%s')":  ottenuto '%s')
+unexpected line '%s' $ riga inattesa '%s'
+missing line (expected '%s') $ riga mancante (atteso '%s')
+wrong number of lines (expected %d, got %d) $ numero di righe errato (atteso %d, ottenuto %d)
+line %d is wrong  (expected '%s', got '%s') $ riga %d errata  (atteso '%s', ottenuto '%s')
+The first %d lines matched correctly $ Le prime %d righe sono corrette
+(... plus other %d errors ...) $ (... più altri %d errori ...)
+ACTUAL OUTPUT $ OUTPUT EFFETTIVO
+EXPECTED OUTPUT $ OUTPUT ATTESO
+detailed comparison $ confronto dettagliato
+<nothing> $ <niente>
+missing section $ sezione mancante
+empty section $ sezione vuota
+extra section $ sezione extra
+Invalid parameter ('%s') $ Parametro non valido ('%s')
+TIMEOUT EXPIRED: PROCESS TERMINATED $ TEMPO LIMITE SCADUTO: PROCESSO TERMINATO
+PROCESS ENDED WITH A FAILURE $ PROCESSO TERMINATO CON UN FALLIMENTO
+(SEGMENTATION FAULT) $ (SEGMENTATION FAULT)
+(ERROR CODE {status}) $ (CODICE D'ERRORE {status})
+FAILED TO RUN THE FILE '{progname}' $ IMPOSSIBILE ESEGUIRE IL FILE '{progname}'
+(the file does not exist) $ (file inesistente)
+(... plus other %d lines ...) $ (... più altre %d righe ...)
+SUMMARY $ RIEPILOGO
+successes $ successi
+warnings $ avvertimenti
+errors $ errori
+<program> $ <programma>
+<valgrind> $ <valgrind>"
+"""
+
 _translations = {
     'it': {
         USAGE_en: USAGE_it,
-        HELP_en: HELP_it,
-        "ERROR": "ERRORE",
-        "OK": "OK",
-        "WARNING!": "ATTENZIONE!",
-        "COMMAND LINE": "RIGA DI COMANDO",
-        "INPUT": "INPUT",
-        "OUTPUT": "OUTPUT",
-        "TEMPORARY FILE": "FILE TEMPORANEO",
-        "TEST": "TEST",
-        " line %d": " riga %d",
-        " (expected '%s'": " (atteso '%s'",
-        ", got '%s')": ", ottenuto '%s')",
-        "unexpected line '%s'": "riga inattesa '%s'",
-        "missing line (expected '%s')": "riga mancante (atteso '%s')",
-        "wrong number of lines (expected %d, got %d)": "numero di righe errato (atteso %d, ottenuto %d)",
-        "line %d is wrong  (expected '%s', got '%s')": "riga %d errata  (atteso '%s', ottenuto '%s')",
-        "The first %d lines matched correctly": "Le prime %d righe sono corrette",
-        "(... plus other %d errors ...)": "(... più altri %d errori ...)",
-        'ACTUAL OUTPUT': 'OUTPUT EFFETTIVO',
-        'EXPECTED OUTPUT': 'OUTPUT ATTESO',
-        'detailed comparison': 'confronto dettagliato',
-        "<nothing>": "<niente>",
-        "missing section": "sezione mancante",
-        "empty section": "sezione vuota",
-        "extra section": "sezione extra",
-        "Invalid parameter ('%s')": "Parametro non valido ('%s')",
-        "TIMEOUT EXPIRED: PROCESS TERMINATED":"TEMPO LIMITE SCADUTO: PROCESSO TERMINATO",
-        "PROCESS ENDED WITH A FAILURE": "PROCESSO TERMINATO CON UN FALLIMENTO",
-        "(SEGMENTATION FAULT)": "(SEGMENTATION FAULT)",
-        "(ERROR CODE {status})": "(CODICE D'ERRORE {status})",
-        "FAILED TO RUN THE FILE '{progname}'": "IMPOSSIBILE ESEGUIRE IL FILE '{progname}'",
-        "(the file does not exist)": "(file inesistente)",
-        "(... plus other %d lines ...)": "(... più altre %d righe ...)",
-        "SUMMARY": "RIEPILOGO",
-        "successes": "successi",
-        "warnings": "avvertimenti",
-        "errors": "errori",
-        "<program>": "<programma>",
-	"<valgrind>": "<valgrind>"
-    }
+        HELP_en: HELP_it
+    }.update(dict((a[0], a[2]) for a in
+                  (b.partition('$') for b in _it_strings.splitlines())
+                  if len(a) == 3))
 }
 
 

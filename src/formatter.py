@@ -29,6 +29,16 @@ class Formatter:
         """Called when the execution of a test is terminated."""
         pass
 
+    def comparison_result(self, expected, got, diffs, matches):
+        """Called after the comparison of a section.
+
+        - expected: the expected result
+        - got: the output of the program
+        - diffs: distance measures between the two sets of lines
+        - matches: lines matching those in 'got'
+        """
+        pass
+
 
 class TextFormatter(Formatter):
     """Formatter that writes the results as plain text."""
@@ -36,9 +46,10 @@ class TextFormatter(Formatter):
     # Message priority levels, corresponding to the verbosity.
     DEBUG = 4
     INFO = 3
-    WARNING = 2
-    ERROR = 1
-    FATAL = 0
+    SUCCESS = 2
+    WARNING = 1
+    ERROR = 0
+    FATAL = -1
 
     _RESULT_TABLE = {
         executor.ER_OK: (DEBUG, []),
@@ -72,6 +83,10 @@ class TextFormatter(Formatter):
         """Write a message with the info level."""
         self.message(self.INFO, text)
 
+    def success(self, text):
+        """Write a message with the success level."""
+        self.message(self.SUCCESS, text)
+        
     def warning(self, text):
         """Write a message with the warning level."""
         self.message(self.WARNING, text)
@@ -104,14 +119,14 @@ class TextFormatter(Formatter):
 
     def begin_test(self, description, cmdline_args, input, tempfile):
         maxlines = (None if self._verbosity == self.DEBUG else 5)
-        f = lambda tit,con: self._format_section(_(tit), con, maxlines)
+        f = lambda tit,con: self._format_section(tit, con, maxlines)
         if description is not None:
-            self.info(f("TEST", description))
-        self.info(f("COMMAND LINE", " ".join(cmdline_args)))
+            self.info(f(_("TEST"), description))
+        self.info(f(_("COMMAND LINE"), " ".join(cmdline_args)))
         if input is not None and input.strip():
-            self.info(f("INPUT", input))
+            self.info(f(_("INPUT"), input))
         if tempfile is not None:
-            self.info(f("TEMPORARY FILE", tempfile))
+            self.info(f(_("TEMPORARY FILE"), tempfile))
 
     def execution_result(self, cmdline_args, execution_result):
         info = {
@@ -122,3 +137,16 @@ class TextFormatter(Formatter):
         msg = " ".join(lines).format(**info)
         if msg:
             self.message(level, msg + "\n")
+        if execution_result.output:
+            self.debug(self._format_section(_("OUTPUT"),
+                                            execution_result.output,
+                                            maxlines=None))
+
+    def comparison_result(self, expected, got, diffs, matches):
+        if max(diffs) == 0:
+            self.success("[{}] {}".format(expected.tag, _("OK")))
+        return
+        fmt = _("wrong number of lines (expected %d, got %d)")
+        log.error(fmt % (len(target), len(result)),
+                  extra={'section':key})
+
