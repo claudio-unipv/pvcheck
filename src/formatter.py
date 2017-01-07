@@ -26,7 +26,7 @@ class Formatter:
         """Called when a new test begins."""
         pass
 
-    def execution_result(self, execution_result):
+    def execution_result(self, cmdline_args, execution_result):
         """Called when the execution of a test is terminated."""
         pass
 
@@ -86,10 +86,15 @@ class TextFormatter(Formatter):
         least 1 (or None to print an unlimited number of errors).
 
         """
-        self._verbosity = (verbosity if verbosity is not None else self.INFO)
+        self.set_verbosity(verbosity)
         self._dst = destination
         self._maxerrors = maxerrors
 
+    def set_verbosity(self, verbosity=None):
+        """Set a new verbosity level (0-4)."""
+        self._verbosity = (verbosity if verbosity is not None
+                           else self.INFO)
+        
     def message(self, level, text):
         """Write a text message with the given level."""
         if self.level_enabled(level):
@@ -161,7 +166,7 @@ class TextFormatter(Formatter):
         level, lines = self._RESULT_TABLE[execution_result.result]
         msg = " ".join(lines).format(**info)
         if msg:
-            self.message(level, msg + "\n")
+            self.message(level, msg)
         if execution_result.output and self.level_enabled(self.DEBUG):
             # This can be a lot of data, so do it only when the DEBUG
             # level is enabled.
@@ -258,4 +263,9 @@ class ColoredTextFormatter(TextFormatter):
 
     def message(self, level, text):
         super().message(level, self.COLORS[level] + text + self.ENDC)
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testfile("../test/formatter.txt")
 
