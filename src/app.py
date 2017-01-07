@@ -59,7 +59,7 @@ def parse_options():
         sys.exit(2)
 
     maxerrors = optval('-m', '--max-errors', '4', int)
-    if maxerrors < 0:
+    if maxerrors < 1:
         print(_("Invalid parameter ('%d')") % maxerrors)
         sys.exit(2)
 
@@ -100,14 +100,18 @@ def main():
     """Setup the environment and starts the test session."""
     (args, opts) = parse_options()
 
-    cfg = parse_file(opts['config'])
+    cfg = parse_file(opts["config"])
     td = parse_file(args[0])
     suite = testdata.TestSuite(cfg + td)
 
-    fmt = formatter.TextFormatter(verbosity=opts['verbosity'])
+    fmtclass = (formatter.ColoredTextFormatter if opts["color"]
+                else formatter.TextFormatter)
+
+    fmt = fmtclass(verbosity=opts["verbosity"],
+                   maxerrors=opts["maxerrors"])
     pvc = pvcheck.PvCheck(fmt)
-    pvc.exec_suite(suite, args[1:], timeout=opts['timeout'])
+    pvc.exec_suite(suite, args[1:], timeout=opts["timeout"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

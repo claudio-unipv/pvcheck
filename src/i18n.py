@@ -128,10 +128,12 @@ _translations = {
     'it': {
         USAGE_en: USAGE_it,
         HELP_en: HELP_it
-    }.update(dict((a[0], a[2]) for a in
-                  (b.partition('$') for b in _it_strings.splitlines())
-                  if len(a) == 3))
+    }
 }
+_translations['it'].update(
+    dict((a[0].strip(), a[2].strip()) for a in
+         (b.partition('$') for b in _it_strings.splitlines())
+         if len(a) == 3))
 
 
 ############################################################
