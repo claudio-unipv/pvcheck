@@ -40,7 +40,7 @@ class PvCheck:
             self._exec_test(test, args, timeout=None)
         finally:
             self._fmt.end_session()
-            
+
     def _exec_test(self, test, args, timeout=None):
         """Run the program and verify it according to the test case."""
         input = test.find_section_content(".INPUT", "")
@@ -52,9 +52,9 @@ class PvCheck:
             if tmpfile is not None:
                 args = [(a if a != ".FILE" else executor.ARG_TMPFILE)
                         for a in args]
-        
+
         self._fmt.begin_test(test.description, args, input, tmpfile)
-                    
+
         exec_result = executor.exec_process(
             args, input, tmpfile=tmpfile,
             timeout=timeout
@@ -71,13 +71,19 @@ class PvCheck:
                     continue
                 ordered = ("unordered" not in test.section_options(s.tag))
                 diffs, matches = match.compare_sections(
-                    ans.content, s.content, ordered = ordered
+                    ans.content, s.content, ordered=ordered
                 )
                 self._fmt.comparison_result(s, ans, diffs,
                                             matches)
                 break
             else:
                 self._fmt.missing_section(s)
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testfile("../test/pvcheck.txt")
+
 
 
 
@@ -126,29 +132,6 @@ def ________bah():   ## !!!!
     return outDict
 
 
-def print_final_summary(tests):
-    summary = defaultdict(Counter)
-    for test in tests:
-        results = test['summary']
-        for sec in results:
-            summary[sec][results[sec]] += 1
-
-    log.info('')
-    log.info("=" * 60)
-    log.info('')
-    log.info(_("SUMMARY"))
-    for k in sorted(summary):
-        errs = (summary[k][ResultType.ERROR] +
-                summary[k][ResultType.FATAL])
-        fmt = "%s:  \t%d %s,\t%d %s,\t %d %s"
-        a = [k]
-        a += [summary[k][ResultType.SUCCESS], _("successes")]
-        a += [summary[k][ResultType.WARNING], _("warnings")]
-        a += [errs, _("errors")]
-        log.info(fmt % tuple(a))
-    log.info('')
-
-
 def print_resume(all_tests, args, opts):
     """ Print the resume."""
     for i, test in enumerate(all_tests):
@@ -185,7 +168,7 @@ def print_resume(all_tests, args, opts):
 
 
 def main():
-       
+
     #### !!!!! TO BE CONTINUED ...
 
     all_tests = []
@@ -213,5 +196,5 @@ def main():
     with open(home + "/.pvcheck.log", "a") as logfile:
         logfile.write(json.dumps(global_out) + '\n')
 
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+#    main()

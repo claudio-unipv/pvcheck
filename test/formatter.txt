@@ -13,6 +13,8 @@ INPUT:
 TEMPORARY FILE:
 x
 y
+>>> f.end_session()
+>>> f.begin_session()
 >>> f.set_verbosity(TextFormatter.ERROR)
 >>> f.begin_test("description", ["a b c"], "1\n2\n3\n", "x\ny\n")
 >>> f.set_verbosity(TextFormatter.DEBUG)

@@ -202,7 +202,7 @@ class TextFormatter(Formatter):
         if self._testcount > 0:
             self.info("-" * 60)
         self._testcount += 1
-        maxlines = (None if self._verbosity == self.DEBUG else 5)
+        maxlines = (None if self.level_enabled(self.DEBUG) else 5)
         f = lambda tit,con: self._format_section(tit, con, maxlines)
         if description is not None:
             self.info(f(_("TEST"), description))
