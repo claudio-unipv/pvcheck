@@ -26,10 +26,22 @@ class PvCheck:
 
     def exec_suite(self, suite, args, timeout=None):
         """Verify the program with a collection of test cases."""
-        for test in suite.test_cases():
-            self.exec_test(test, args, timeout=timeout)
+        self._fmt.begin_session()
+        try:
+            for test in suite.test_cases():
+                self._exec_test(test, args, timeout=timeout)
+        finally:
+            self._fmt.end_session()
 
-    def exec_test(self, test, args, timeout=None):
+    def exec_single_test(self, test, args, timeout=None):
+        """Verify the program on a single test case."""
+        self._fmt.begin_session()
+        try:
+            self._exec_test(test, args, timeout=None)
+        finally:
+            self._fmt.end_session()
+            
+    def _exec_test(self, test, args, timeout=None):
         """Run the program and verify it according to the test case."""
         input = test.find_section_content(".INPUT", "")
         tmpfile = test.find_section_content(".FILE", None)
@@ -37,9 +49,12 @@ class PvCheck:
         arg_sect = test.find_section(".ARGS")
         if arg_sect is not None:
             args.extend(map(str.strip, arg_sect.content))
-
-        self._fmt.begin_test(test.description, args, input, tmpfile)
+            if tmpfile is not None:
+                args = [(a if a != ".FILE" else executor.ARG_TMPFILE)
+                        for a in args]
         
+        self._fmt.begin_test(test.description, args, input, tmpfile)
+                    
         exec_result = executor.exec_process(
             args, input, tmpfile=tmpfile,
             timeout=timeout

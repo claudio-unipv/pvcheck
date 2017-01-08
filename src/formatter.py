@@ -1,31 +1,45 @@
-"""Classes to be used to communicate the results."""
+"""Classes that communicate the results."""
 
 import sys
 from itertools import zip_longest
+from collections import defaultdict
 import i18n
 import executor
 
 from i18n import translate as _
 
-# Possibile execution results"
-ER_OK = "OK"
-ER_EXECUTION_ERROR = "EXE_ERROR"
-ER_SEGMENTATION_FAULT = "SEGFAULT"
-ER_TIMEOUT = "TIMEOUT"
-ER_ERROR_CODE = "ERR_CODE"
-
 
 class Formatter:
-    """Abstract base class for all the formatters."""
+    """Abstract base class for all the formatters.
+    
+    The client is supposed to call the methods in the following order:
+
+    1) begin_session
+    2) <repeat zero or more times>
+    2a)  begin_test
+    2b)  execution_result
+    2c)  zero or more of comparison_result or missing_section
+    2d)  end_test
+    3) end_session
+
+    """
 
     def begin_session(self):
         """Called when starting a new test session."""
         pass
 
+    def end_session(self):
+        """Called at the end of a test session."""
+        pass
+    
     def begin_test(self, description, cmdline_args, input, tempfile):
         """Called when a new test begins."""
         pass
 
+    def end_test(self):
+        """Called when a test finishes."""
+        pass
+    
     def execution_result(self, cmdline_args, execution_result):
         """Called when the execution of a test is terminated."""
         pass
@@ -89,6 +103,7 @@ class TextFormatter(Formatter):
         self.set_verbosity(verbosity)
         self._dst = destination
         self._maxerrors = maxerrors
+        self._testcount = 0
 
     def set_verbosity(self, verbosity=None):
         """Set a new verbosity level (0-4)."""
@@ -144,21 +159,65 @@ class TextFormatter(Formatter):
             return "{}: {}".format(title, lines[0])
         if maxlines is not None and n > maxlines:
             lines = lines[:maxlines]
-            lines[-1] = _("(... plus other %d lines ...)")
+            extra = n - maxlines + 1
+            lines[-1] = _("(... plus other %d lines ...)") % extra
         return "{}:\n{}".format(title, "\n".join(lines))
 
+    def begin_session(self):
+        # Initialize the counters for the summary
+        self._testcount = 0
+        self._sect_ok = defaultdict(int)
+        self._sect_warn = defaultdict(int)
+        self._sect_err = defaultdict(int)
+
+    def end_session(self):
+        if self._testcount < 2:
+            return
+
+        # Write a summary of the session
+        self.info("")
+        self.info("=" * 60)
+        self.info("")
+        self.info(_("SUMMARY"))
+
+        tags = (list(self._sect_ok) + list(self._sect_warn) +
+                list(self._sect_err))
+        tags.sort()
+        l = max(map(len, tags))
+        for t in tags:
+            row = ["{:{}}:".format(t, l)]
+            row.append("%2d %s," % (self._sect_ok[t], _("successes")))
+            row.append("%2d %s," % (self._sect_warn[t], _("warnings")))
+            row.append("%2d %s" % (self._sect_err[t], _("errors")))
+            self.info("  ".join(row))
+        self.info("")
+        self._testcount = 0
+        
+    def _proc_args(self, args):
+        return [(a if a is not executor.ARG_TMPFILE
+                 else _("<temp.file>"))
+                for a in args]
+    
     def begin_test(self, description, cmdline_args, input, tempfile):
+        if self._testcount > 0:
+            self.info("-" * 60)
+        self._testcount += 1
         maxlines = (None if self._verbosity == self.DEBUG else 5)
         f = lambda tit,con: self._format_section(tit, con, maxlines)
         if description is not None:
             self.info(f(_("TEST"), description))
-        self.info(f(_("COMMAND LINE"), " ".join(cmdline_args)))
+        arglist = " ".join(self._proc_args(cmdline_args))
+        self.info(f(_("COMMAND LINE"), arglist))
         if input is not None and input.strip():
             self.info(f(_("INPUT"), input))
         if tempfile is not None:
             self.info(f(_("TEMPORARY FILE"), tempfile))
 
     def execution_result(self, cmdline_args, execution_result):
+        if execution_result.result == executor.ER_OK:
+            self._sect_ok[_("<program>")] += 1
+        else:
+            self._sect_err[_("<program>")] += 1
         info = {
             'progname': cmdline_args[0],
             'status': execution_result.status
@@ -178,8 +237,10 @@ class TextFormatter(Formatter):
 
     def comparison_result(self, expected, got, diffs, matches):
         if max(diffs) == 0:
+            self._sect_ok[expected.tag] += 1
             self.success("{}: {}".format(expected.tag, _("OK")))
         else:
+            self._sect_err[expected.tag] += 1
             if len(expected.content) != len(got.content):
                 fmt = _("wrong number of lines (expected %d, got %d)")
                 msg = fmt % (len(expected.content), len(got.content))
@@ -231,6 +292,7 @@ class TextFormatter(Formatter):
             self.debug(fmt % (prnt(e), prnt(a)))
 
     def missing_section(self, expected):
+        self._sect_warn[expected.tag] += 1
         self.warning(expected.tag + ": " + _("missing section"))
 
 
