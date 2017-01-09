@@ -92,7 +92,8 @@ class TestSuite:
     def __init__(self, sections=()):
         """Create a suite from a sequence of sections."""
         it = self._group_tests(sections)
-        prefix = next(it)[1]
+        prefix = next(it, (None, []))[1]
+
         self._cases = []
         for testname, secs in it:
             c = TestCase(testname)

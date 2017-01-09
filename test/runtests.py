@@ -27,3 +27,6 @@ for f in os.listdir(TESTDIR):
 print("{} tests in {} files.".format(attempted, files))
 print("{} passed and {} failed.".format(attempted - failed, failed))
 print("Test passed." if failed == 0 else "Test failed.")
+
+
+# python3 -m unittest discover -s . -p 'test_*.py'
