@@ -1,0 +1,59 @@
+import unittest
+import sys
+sys.path.insert(0, '../src')
+import io
+from pvcheck import *
+from testdata import *
+import formatter
+
+
+class TestPVCheck(unittest.TestCase):
+    def test_exec_single_test(self):
+        dst = io.StringIO()
+        fmt = formatter.TextFormatter(destination=dst)
+        pv = PvCheck(fmt)
+
+        test = TestCase("echo", [
+            Section(".ARGS", ["[OUT]\nfoo"]),
+            Section("OUT", ["foo"])
+        ])
+
+        pv.exec_single_test(test, ["echo"])
+        exp = """TEST: echo
+COMMAND LINE:
+echo [OUT]
+foo
+OUT: OK
+"""
+        self.assertEqual(dst.getvalue(), exp)
+
+    def test_exec_suite(self):
+        dst = io.StringIO()
+        verb = formatter.TextFormatter.SUCCESS
+        fmt = formatter.TextFormatter(destination=dst,
+                                      verbosity=verb)
+        pv = PvCheck(fmt)
+
+        sections = [
+            Section(".TEST", ["echo1"]),
+            Section(".ARGS", ["[OUT]\nfoo"]),
+            Section("OUT", ["foo"]),
+            Section(".TEST", ["echo2"]),
+            Section(".ARGS", ["[OUT]\nbar"]),
+            Section("OUT", ["foo"]),
+            Section(".TEST", ["echo3"]),
+            Section(".ARGS", ["[OUT]\nfoo"]),
+            Section("OUT", ["foo"]),
+            Section("NOTFOUND", ["notfound"])
+        ]
+        pv.exec_suite(TestSuite(sections), ["echo"])
+        exp = """OUT: OK
+OUT: line 1 is wrong  (expected 'foo', got 'bar')
+OUT: OK
+NOTFOUND: missing section
+"""
+        self.assertEqual(dst.getvalue(), exp)
+
+
+if __name__ == '__main__':
+    unittest.main()
