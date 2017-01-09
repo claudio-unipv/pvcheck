@@ -1,19 +1,11 @@
 """Main PvCheck class."""
 
-import subprocess
-import signal
 import os
-import sys
-import logging
-import tempfile
 import json
-from itertools import count, zip_longest
-from collections import Counter, defaultdict
 import datetime
 
 import match
 import parser
-import testdata
 import executor
 from i18n import translate as _
 
@@ -78,13 +70,6 @@ class PvCheck:
                 break
             else:
                 self._fmt.missing_section(s)
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testfile("../test/pvcheck.txt")
-
-
 
 
 

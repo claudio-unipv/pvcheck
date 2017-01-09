@@ -140,7 +140,7 @@ _translations['it'].update(
 ############################################################
 # Setup and shutdown
 ############################################################
-    
+
 def _install_lang():
     global _lang
     global _strings

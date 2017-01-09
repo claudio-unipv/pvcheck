@@ -3,15 +3,13 @@
 import sys
 from itertools import zip_longest
 from collections import defaultdict
-import i18n
 import executor
-
 from i18n import translate as _
 
 
 class Formatter:
     """Abstract base class for all the formatters.
-    
+
     The client is supposed to call the methods in the following order:
 
     1) begin_session
@@ -31,7 +29,7 @@ class Formatter:
     def end_session(self):
         """Called at the end of a test session."""
         pass
-    
+
     def begin_test(self, description, cmdline_args, input, tempfile):
         """Called when a new test begins."""
         pass
@@ -39,7 +37,7 @@ class Formatter:
     def end_test(self):
         """Called when a test finishes."""
         pass
-    
+
     def execution_result(self, cmdline_args, execution_result):
         """Called when the execution of a test is terminated."""
         pass
@@ -87,7 +85,7 @@ class TextFormatter(Formatter):
         (ERROR, [_("FAILED TO RUN THE FILE '{progname}'"),
                  _("(the file does not exist)")])
     }
-    
+
     def __init__(self, destination=sys.stdout, verbosity=None,
                  maxerrors=None):
         """Create the text formatter.
@@ -95,7 +93,7 @@ class TextFormatter(Formatter):
         - destination: file-like object receiving the text messages
         - verbosity: set the amount of information to write
         - maxerrors: maximum number of errors to print (per section)
-        
+
         verbosity must be in the range 0-4.  maxerrors must be at
         least 1 (or None to print an unlimited number of errors).
 
@@ -109,7 +107,7 @@ class TextFormatter(Formatter):
         """Set a new verbosity level (0-4)."""
         self._verbosity = (verbosity if verbosity is not None
                            else self.INFO)
-        
+
     def message(self, level, text):
         """Write a text message with the given level."""
         if self.level_enabled(level):
@@ -119,7 +117,7 @@ class TextFormatter(Formatter):
     def level_enabled(self, level):
         """Return true if the output level is enabled."""
         return (self._verbosity >= level)
-            
+
     def debug(self, text):
         """Write a message with the debug level."""
         self.message(self.DEBUG, text)
@@ -131,7 +129,7 @@ class TextFormatter(Formatter):
     def success(self, text):
         """Write a message with the success level."""
         self.message(self.SUCCESS, text)
-        
+
     def warning(self, text):
         """Write a message with the warning level."""
         self.message(self.WARNING, text)
@@ -192,12 +190,12 @@ class TextFormatter(Formatter):
             self.info("  ".join(row))
         self.info("")
         self._testcount = 0
-        
+
     def _proc_args(self, args):
         return [(a if a is not executor.ARG_TMPFILE
                  else _("<temp.file>"))
                 for a in args]
-    
+
     def begin_test(self, description, cmdline_args, input, tempfile):
         if self._testcount > 0:
             self.info("-" * 60)
@@ -245,7 +243,7 @@ class TextFormatter(Formatter):
                 fmt = _("wrong number of lines (expected %d, got %d)")
                 msg = fmt % (len(expected.content), len(got.content))
                 self.error(expected.tag + ": " + msg)
-            
+
             err_diff = _("line %d is wrong  (expected '%s', got '%s')")
             err_un = _("unexpected line '%s'")
             err_mis = _("missing line (expected '%s')")
@@ -284,7 +282,7 @@ class TextFormatter(Formatter):
         def prnt(s):
             s = (s.rstrip() if s is not None else _("<nothing>"))
             return (s if len(s) <= 30 else s[:26] + "...")
-        
+
         self.debug(expected.tag + ": " +  _("detailed comparison"))
         self.debug(fmt % (_("EXPECTED OUTPUT"), _("ACTUAL OUTPUT")))
 
@@ -325,9 +323,3 @@ class ColoredTextFormatter(TextFormatter):
 
     def message(self, level, text):
         super().message(level, self.COLORS[level] + text + self.ENDC)
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testfile("../test/formatter.txt")
-

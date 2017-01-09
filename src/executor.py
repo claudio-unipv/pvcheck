@@ -86,8 +86,3 @@ def exec_process(args, input, tmpfile=None, timeout=None):
             er = ER_NOTFILE
     output = str(output, 'utf-8', errors='replace')
     return ExecResult(er, ret_code, output)
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testfile("../test/executor.txt")

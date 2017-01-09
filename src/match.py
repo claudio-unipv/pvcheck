@@ -4,7 +4,7 @@ Used to compare the expected and the actual outputs.
 """
 
 import re
-from itertools import count, zip_longest
+from itertools import zip_longest
 
 
 _RE_INT = re.compile(r'(-|\+)?[0-9]+')
@@ -129,8 +129,3 @@ def _compare_unordered_sections(actual, expected):
         diffs.append(1.0)
         ordered.append(y)
     return (diffs, ordered)
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testfile("../test/match.txt")

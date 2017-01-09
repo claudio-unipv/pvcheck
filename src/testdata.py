@@ -18,7 +18,7 @@ class Section:
             return ""
         else:
             return "\n".join(self.content) + "\n"
-    
+
     def __repr__(self):
         return ("Section('%s')" % self.tag)
 
@@ -58,7 +58,7 @@ class TestCase:
         """Search for a section with the given tag name."""
         s = self._sections.get(tag)
         return (s.text() if s is not None else default)
-    
+
     def section_options(self, tag):
         """Return the special options for a section."""
         return self._section_options.get(tag, set())
@@ -127,8 +127,3 @@ class TestSuite:
                 lst.append(s)
         if n > 0 or lst:
             yield (name, lst)
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testfile("../test/testdata.txt")

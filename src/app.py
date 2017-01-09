@@ -44,7 +44,7 @@ def parse_options():
             return x
         try:
             return result_type(x)
-        except ValueError as err:
+        except ValueError:
             print(_("Invalid parameter ('%s')") % x)
             sys.exit(2)
 

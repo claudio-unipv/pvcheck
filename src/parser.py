@@ -1,3 +1,5 @@
+"""Parse text representing sections."""
+
 import re
 import testdata
 
@@ -29,8 +31,3 @@ def parse_sections(f):
             content.append(line.rstrip())
     if tag != "" or len(content) > 0:
         yield testdata.Section(tag, content)
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testfile("../test/parser.txt")
