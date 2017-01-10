@@ -7,6 +7,7 @@ import pvcheck
 import parser
 import testdata
 import formatter
+import jsonformatter
 import executor
 import valgrind
 import i18n
@@ -113,10 +114,13 @@ def main():
     exe = execlass()
         
 
-    fmtclass = (formatter.ColoredTextFormatter if opts["color"]
-                else formatter.TextFormatter)
-    fmt = fmtclass(verbosity=opts["verbosity"],
-                   maxerrors=opts["maxerrors"])
+    if opts["output"] == "JSON":
+        fmt = jsonformatter.JSONFormatter(indent=4)
+    else:
+        fmtclass = (formatter.ColoredTextFormatter if opts["color"]
+                    else formatter.TextFormatter)
+        fmt = fmtclass(verbosity=opts["verbosity"],
+                       maxerrors=opts["maxerrors"])
     pvc = pvcheck.PvCheck(exe, fmt)
     pvc.exec_suite(suite, args[1:], timeout=opts["timeout"])
 
