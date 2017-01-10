@@ -1,62 +1,41 @@
+"""Executor using the valgrind memory checker tool."""
+
+import executor
 
 
-### !!! TO BE REFACTORED
+class ValgrindExecutor(executor.Executor):
+    """Executor that uses valgrind to check the memory usage.
+    
+    Output from valgrind is detected and used to form a new 'VALGRIND'
+    section at the end of the regular process output.  In absence of
+    errors that section would be empty.
 
+    Valgrind need to be installed in the system.
 
+    """
+    
+    def exec_process(self, args, *rest, **kwargs):
+        res = super().exec_process(["valgrind"]+args, *rest, **kwargs)
+        out, err = self._process_output(res.output, res.stderr)
+        return res._replace(output=out, stderr=err)
 
-"""
-    ...
-    if opts['valgrind']:
-        args.insert(1, "valgrind")
-        valgrind_out = tempfile.NamedTemporaryFile(suffix=".pvcheck.valgrind",
-                                                   delete=False)
-        kwargs['stderr'] = valgrind_out
-    else:
-        valgrind_out = None
-    ...
-
-
-
-    if valgrind_out is not None:
-        valgrind_out.close()
-        with open(valgrind_out.name, "rt") as f:
-            valgrind_report = [x for x in f]
-        os.remove(valgrind_out.name)
-    else:
-        valgrind_report = []
-
-"""
-
-
-def parse_valgrind(report):
-    """Analyse the report by Valgrind and log the result."""
-    warnings = 0
-    errors = 0
-    for line in report:
-        if not line.startswith('=='):
-            continue
-        f = line.split()
-        if "in use at exit" in line:
-            bytes_ = int(f[5].replace(',', ''))
-            if bytes_ > 0:
-                log.warning("VALGRIND: memory %s" % " ".join(f[1:]))
-                warnings += 1
-            else:
-                log.debug("VALGRIND: memory %s" % " ".join(f[1:]))
-        elif "total heap usage" in line:
-            allocs = int(f[4].replace(',', ''))
-            frees = int(f[6].replace(',', ''))
-            if allocs != frees:
-                log.warning("VALGRIND: %s" % " ".join(f[1:]))
-                warnings += 1
-            else:
-                log.debug("VALGRIND: %s" % " ".join(f[1:]))
-
-        elif "ERROR SUMMARY" in line:
-            errs = int(f[3].replace(',', ''))
-            if errs > 0:
-                log.error("VALGRIND: %s" % " ".join(f[3:]))
-                errors += errs
-            else:
-                log.debug("VALGRIND: %s" % " ".join(f[3:]))
-    return (errors, warnings)
+    def _process_output(self, stdout, stderr):
+        extraout = ["\n[VALGRIND]\n"]
+        newerr = []
+        for line in stderr.splitlines(keepends=True):
+            if not line.startswith("=="):
+                newerr.append(line)
+                continue
+            if "in use at exit" in line:
+                f = line.split()
+                bytes_ = int(f[5].replace(',', ''))
+                if bytes_ > 0:
+                    extraout.append(line)
+            elif "total heap usage" in line:
+                f = line.split()
+                allocs = int(f[4].replace(',', ''))
+                frees = int(f[6].replace(',', ''))
+                if allocs != frees:
+                    extraout.append(line)
+        newout = stdout + "".join(extraout)
+        return (newout, "".join(newerr))

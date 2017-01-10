@@ -234,7 +234,7 @@ class TextFormatter(Formatter):
                                             maxlines=None))
 
     def comparison_result(self, expected, got, diffs, matches):
-        if max(diffs) == 0:
+        if max(diffs, default=0) == 0:
             self._sect_ok[expected.tag] += 1
             self.success("{}: {}".format(expected.tag, _("OK")))
         else:

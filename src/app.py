@@ -7,6 +7,8 @@ import pvcheck
 import parser
 import testdata
 import formatter
+import executor
+import valgrind
 import i18n
 
 
@@ -102,14 +104,20 @@ def main():
 
     cfg = parse_file(opts["config"])
     td = parse_file(args[0])
+    if opts['valgrind']:
+        cfg.append(testdata.Section('VALGRIND', []))
     suite = testdata.TestSuite(cfg + td)
+
+    execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
+                else executor.Executor)
+    exe = execlass()
+        
 
     fmtclass = (formatter.ColoredTextFormatter if opts["color"]
                 else formatter.TextFormatter)
-
     fmt = fmtclass(verbosity=opts["verbosity"],
                    maxerrors=opts["maxerrors"])
-    pvc = pvcheck.PvCheck(fmt)
+    pvc = pvcheck.PvCheck(exe, fmt)
     pvc.exec_suite(suite, args[1:], timeout=opts["timeout"])
 
 

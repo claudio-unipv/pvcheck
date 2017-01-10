@@ -122,7 +122,6 @@ successes $ successi
 warnings $ avvertimenti
 errors $ errori
 <program> $ <programma>
-<valgrind> $ <valgrind>"
 """
 
 _translations = {
