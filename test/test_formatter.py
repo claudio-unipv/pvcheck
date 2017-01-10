@@ -40,23 +40,23 @@ y
         f.begin_session()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_OK, 0, "")
+        res = executor.ExecResult(executor.ER_OK, 0, "", "")
         f.execution_result(["prog"], res)
         
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_SEGFAULT, -1, "")
+        res = executor.ExecResult(executor.ER_SEGFAULT, -1, "", "")
         f.execution_result(["prog"], res)
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_TIMEOUT, 0, "")
+        res = executor.ExecResult(executor.ER_TIMEOUT, 0, "", "")
         f.execution_result(["prog"], res)
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_ERROR, 42, "")
+        res = executor.ExecResult(executor.ER_ERROR, 42, "", "")
         f.execution_result(["prog"], res)
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_NOTFILE, 1, "")
+        res = executor.ExecResult(executor.ER_NOTFILE, 1, "", "")
         f.execution_result(["prog"], res)
         
         f.end_session()
@@ -74,7 +74,7 @@ FAILED TO RUN THE FILE 'prog' (the file does not exist)
         f.begin_session()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_OK, 0, "")
+        res = executor.ExecResult(executor.ER_OK, 0, "", "")
         f.execution_result(["prog"], res)
         f.missing_section(Section("NOTEXISTING", []))
 
@@ -89,7 +89,7 @@ FAILED TO RUN THE FILE 'prog' (the file does not exist)
         f.begin_session()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_OK, 0, "")
+        res = executor.ExecResult(executor.ER_OK, 0, "", "")
         f.execution_result(["prog"], res)
         f.comparison_result(
             Section("EXPECTED", ["1", "2"]),
@@ -110,7 +110,7 @@ EXPECTED: unexpected line '4'
         f.begin_session()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_OK, 0, "")
+        res = executor.ExecResult(executor.ER_OK, 0, "", "")
         f.execution_result(["prog"], res)
         f.comparison_result(
             Section("EXPECTED", ["1", "2", "3", "4", "5", "6"]),
@@ -132,7 +132,7 @@ EXPECTED: line 3 is wrong  (expected '3', got '2')
         f.begin_session()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_OK, 0, "")
+        res = executor.ExecResult(executor.ER_OK, 0, "", "")
         f.execution_result(["prog"], res)
         f.comparison_result(
             Section("EXPECTED", ["1", "2"]),
@@ -153,7 +153,7 @@ EXPECTED: missing line (expected '2')
         f.begin_session()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_OK, 0, "")
+        res = executor.ExecResult(executor.ER_OK, 0, "", "")
         f.execution_result(["prog"], res)
         f.comparison_result(
             Section("EXPECTED", ["1", "2"]),

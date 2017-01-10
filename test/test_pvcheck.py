@@ -5,13 +5,14 @@ import io
 from pvcheck import *
 from testdata import *
 import formatter
+import executor
 
 
 class TestPVCheck(unittest.TestCase):
     def test_exec_single_test(self):
         dst = io.StringIO()
         fmt = formatter.TextFormatter(destination=dst)
-        pv = PvCheck(fmt)
+        pv = PvCheck(executor.Executor(), fmt)
 
         test = TestCase("echo", [
             Section(".ARGS", ["[OUT]\nfoo"]),
@@ -32,7 +33,7 @@ OUT: OK
         verb = formatter.TextFormatter.SUCCESS
         fmt = formatter.TextFormatter(destination=dst,
                                       verbosity=verb)
-        pv = PvCheck(fmt)
+        pv = PvCheck(executor.Executor(), fmt)
 
         sections = [
             Section(".TEST", ["echo1"]),

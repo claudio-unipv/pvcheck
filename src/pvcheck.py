@@ -13,7 +13,8 @@ from i18n import translate as _
 class PvCheck:
     """Main class that runs the tests."""
 
-    def __init__(self, formatter):
+    def __init__(self, executor, formatter):
+        self._exec = executor
         self._fmt = formatter
 
     def exec_suite(self, suite, args, timeout=None):
@@ -47,7 +48,7 @@ class PvCheck:
 
         self._fmt.begin_test(test.description, args, input, tmpfile)
 
-        exec_result = executor.exec_process(
+        exec_result = self._exec.exec_process(
             args, input, tmpfile=tmpfile,
             timeout=timeout
         )
