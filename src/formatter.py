@@ -178,11 +178,10 @@ class TextFormatter(Formatter):
         self.info("")
         self.info(_("SUMMARY"))
 
-        tags = (list(self._sect_ok) + list(self._sect_warn) +
+        tags = set(list(self._sect_ok) + list(self._sect_warn) +
                 list(self._sect_err))
-        tags.sort()
         l = max(map(len, tags))
-        for t in tags:
+        for t in sorted(tags):
             row = ["{:{}}:".format(t, l)]
             row.append("%2d %s," % (self._sect_ok[t], _("successes")))
             row.append("%2d %s," % (self._sect_warn[t], _("warnings")))

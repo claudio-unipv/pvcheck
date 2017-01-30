@@ -64,16 +64,16 @@ class Executor:
             if tmpfile is not None:
                 tmpname = stack.enter_context(_make_temp_file(tmpfile))
                 args = self._replace_placeholder(args, tmpname)
-            output = ""
-            error = ""
+            outputb = b""
+            errorb = b""
             ret_code = 0
             try:
                 proc = subprocess.Popen(args,
-                                        universal_newlines=True,
                                         stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE)
-                output, error = proc.communicate(input, timeout)
+                inputb = input.encode('utf-8', errors='ignore')
+                outputb, errorb = proc.communicate(inputb, timeout)
                 codes = {0: ER_OK, -signal.SIGSEGV: ER_SEGFAULT}
                 er = codes.get(proc.returncode, ER_ERROR)
                 ret_code = proc.returncode
@@ -85,7 +85,8 @@ class Executor:
                 proc.stderr.close()
             except FileNotFoundError:
                 er = ER_NOTFILE
-            
+        output = outputb.decode('utf-8', errors='ignore')
+        error = errorb.decode('utf-8', errors='ignore')
         return ExecResult(er, ret_code, output, error)
 
     def _replace_placeholder(self, args, name):
