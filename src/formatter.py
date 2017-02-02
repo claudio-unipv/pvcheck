@@ -268,7 +268,7 @@ class TextFormatter(Formatter):
                 self.error(_("(... plus other %d errors ...)") % extra)
             if len(got.content) > 0 and max(diffs[:len(got.content)]) == 0:
                 fmt = _("The first %d lines matched correctly")
-                msg = fmt % min(len(got.content))
+                msg = fmt % len(got.content)
                 self.warning(expected.tag + ": " + msg)
 
         # Extra information to be skipped unless the DEBUG level is
