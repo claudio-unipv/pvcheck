@@ -52,6 +52,8 @@ Options:
   -C, --color=YES|NO|AUTO  enable or disable colored output (default AUTO).
   -V, --valgrind           use Valgrind (if installed) to check memory usage.
   -o, --output=RESUME|JSON select the output type.
+  -l, --log=FILE           specify the name of the file used for logging.  The
+                           default is ~/.pvcheck.log.
   -h, --help               print this message and exit.
 """
 
@@ -76,6 +78,8 @@ Opzioni:
   -V, --valgrind           utilizza Valgrind (se installato) per controllare
                            l'utilizzo della memoria.
   -o, --output=RESUME|JSON seleziona il tipo di output.
+  -l, --log=FILE           specifica il nome del file usato per il logging.
+                           Il default è ~/.pvcheck.log.
   -h, --help               stampa questo messaggio ed esce.
 """
 

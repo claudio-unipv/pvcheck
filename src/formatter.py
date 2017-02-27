@@ -322,3 +322,41 @@ class ColoredTextFormatter(TextFormatter):
 
     def message(self, level, text):
         super().message(level, self.COLORS[level] + text + self.ENDC)
+
+
+class CombinedFormatter(Formatter):
+    """A formatter that broadcasts the messages to other formatters."""
+
+    def __init__(self, formatters=()):
+        """Create the formatter."""
+        self.formatters = list(formatters)
+
+    def begin_session(self):
+        for f in self.formatters:
+            f.begin_session()
+
+    def end_session(self):
+        for f in self.formatters:
+            f.end_session()
+
+    def begin_test(self, *args):
+        for f in self.formatters:
+            f.begin_test(*args)
+
+    def end_test(self):
+        for f in self.formatters:
+            f.end_test()
+
+    def execution_result(self, *args):
+        for f in self.formatters:
+            f.execution_result(*args)
+
+    def comparison_result(self, *args):
+        for f in self.formatters:
+            f.comparison_result(*args)
+
+    def missing_section(self, *args):
+        for f in self.formatters:
+            f.missing_section(*args)
+
+    

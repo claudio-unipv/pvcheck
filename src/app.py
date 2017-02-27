@@ -2,6 +2,7 @@
 
 import sys
 import getopt
+import os
 
 import pvcheck
 import parser
@@ -16,13 +17,15 @@ import i18n
 __doc__ = i18n.HELP_en
 _ = i18n.translate
 
+_DEFAULT_LOG_FILE = os.path.expanduser("~/.pvcheck.log")
+
 
 def parse_options():
     """Parse the command line."""
 
-    shortopts = "hc:t:v:m:C:Vo:"
+    shortopts = "hc:t:v:m:C:Vo:l:"
     longopts = ["help", "config=", "timeout=", "verbosity=",
-                "max-errors=", "color=", "valgrind", "output="]
+                "max-errors=", "color=", "valgrind", "output=", "log="]
     try:
         opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err:
@@ -79,10 +82,12 @@ def parse_options():
         print(_("Invalid parameter ('%s')") % output)
         sys.exit(2)
 
+    logfile = optval('-l', '--log', _DEFAULT_LOG_FILE, str)
+        
     valgrind = (True if '-V' in opts or '--valgrind' in opts else False)
     opts = dict(config=config, verbosity=verbosity, timeout=timeout,
                 maxerrors=maxerrors, color=color, valgrind=valgrind,
-                output=output)
+                output=output, logfile=logfile)
 
     return (args, opts)
 
@@ -113,7 +118,7 @@ def main():
                 else executor.Executor)
     exe = execlass()
         
-
+    
     if opts["output"] == "JSON":
         fmt = jsonformatter.JSONFormatter(indent=4)
     else:
@@ -121,9 +126,13 @@ def main():
                     else formatter.TextFormatter)
         fmt = fmtclass(verbosity=opts["verbosity"],
                        maxerrors=opts["maxerrors"])
-    pvc = pvcheck.PvCheck(exe, fmt)
-    pvc.exec_suite(suite, args[1:], timeout=opts["timeout"])
 
+    with open(opts["logfile"], "at") as logfile:
+        logfmt = jsonformatter.JSONFormatter(logfile)
+        combfmt = formatter.CombinedFormatter([fmt, logfmt])
+        pvc = pvcheck.PvCheck(exe, combfmt)
+        pvc.exec_suite(suite, args[1:], timeout=opts["timeout"])
+        logfile.write("\n")
 
 if __name__ == "__main__":
     main()
