@@ -37,5 +37,11 @@ class ValgrindExecutor(executor.Executor):
                 frees = int(f[6].replace(',', ''))
                 if allocs != frees:
                     extraout.append(line)
+            elif "ERROR SUMMARY" in line:
+                f = line.split()
+                errs = int(f[3].replace(',', ''))
+                if errs > 0:
+                    extraout.append(line)
+
         newout = stdout + "".join(extraout)
         return (newout, "".join(newerr))
