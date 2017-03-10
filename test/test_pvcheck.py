@@ -19,13 +19,14 @@ class TestPVCheck(unittest.TestCase):
             Section("OUT", ["foo"])
         ])
 
-        pv.exec_single_test(test, ["echo"])
+        ok = pv.exec_single_test(test, ["echo"])
         exp = """TEST: echo
 COMMAND LINE:
 echo [OUT]
 foo
 OUT: OK
 """
+        self.assertTrue(ok)
         self.assertEqual(dst.getvalue(), exp)
 
     def test_exec_suite(self):
@@ -47,12 +48,13 @@ OUT: OK
             Section("OUT", ["foo"]),
             Section("NOTFOUND", ["notfound"])
         ]
-        pv.exec_suite(TestSuite(sections), ["echo"])
+        failures = pv.exec_suite(TestSuite(sections), ["echo"])
         exp = """OUT: OK
 OUT: line 1 is wrong  (expected 'foo', got 'bar')
 OUT: OK
 NOTFOUND: missing section
 """
+        self.assertEqual(failures, 2)
         self.assertEqual(dst.getvalue(), exp)
 
 

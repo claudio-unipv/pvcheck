@@ -127,12 +127,18 @@ def main():
         fmt = fmtclass(verbosity=opts["verbosity"],
                        maxerrors=opts["maxerrors"])
 
+    # Pvcheck returns as exit code the number of failed tests.
+    # 255 represents a generic error.
+    retcode = 255
     with open(opts["logfile"], "at") as logfile:
         logfmt = jsonformatter.JSONFormatter(logfile)
         combfmt = formatter.CombinedFormatter([fmt, logfmt])
         pvc = pvcheck.PvCheck(exe, combfmt)
-        pvc.exec_suite(suite, args[1:], timeout=opts["timeout"])
+        failures = pvc.exec_suite(suite, args[1:],
+                                  timeout=opts["timeout"])
+        retcode = min(failures, 254)
         logfile.write("\n")
+    sys.exit(retcode)
 
 if __name__ == "__main__":
     main()

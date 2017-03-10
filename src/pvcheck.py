@@ -18,24 +18,36 @@ class PvCheck:
         self._fmt = formatter
 
     def exec_suite(self, suite, args, timeout=None):
-        """Verify the program with a collection of test cases."""
+        """Verify the program with a collection of test cases.
+
+        Return the number of failed tests.
+        """
         self._fmt.begin_session()
+        failures = 0
         try:
             for test in suite.test_cases():
-                self._exec_test(test, args, timeout=timeout)
+                if not self._exec_test(test, args, timeout=timeout):
+                    failures += 1
         finally:
             self._fmt.end_session()
+        return failures
 
     def exec_single_test(self, test, args, timeout=None):
-        """Verify the program on a single test case."""
+        """Verify the program on a single test case.
+
+        Return True if the test has been successfully passed.
+        """
         self._fmt.begin_session()
+        success = False
         try:
-            self._exec_test(test, args, timeout=None)
+            success = self._exec_test(test, args, timeout=None)
         finally:
             self._fmt.end_session()
+        return success
 
     def _exec_test(self, test, args, timeout=None):
-        """Run the program and verify it according to the test case."""
+        # Run the program and verify it according to the test case.
+        # Return True if the test is successful.
         input = test.find_section_content(".INPUT", "")
         tmpfile = test.find_section_content(".FILE", None)
         args = list(args)
@@ -54,9 +66,13 @@ class PvCheck:
         )
         self._fmt.execution_result(args, exec_result)
         if exec_result.result == executor.ER_OK:
-            self._check_output(test, exec_result.output)
+            return self._check_output(test, exec_result.output)
+        else:
+            return False
 
     def _check_output(self, test, output):
+        # Return True if the test has been passed.
+        success = True
         answers = list(parser.parse_sections(output.splitlines()))
         for s in test.sections(exclude_special=True):
             for ans in answers:
@@ -68,6 +84,9 @@ class PvCheck:
                 )
                 self._fmt.comparison_result(s, ans, diffs,
                                             matches)
+                success = success and (max(diffs, default=0.0) == 0)
                 break
             else:
+                success = False
                 self._fmt.missing_section(s)
+        return success
