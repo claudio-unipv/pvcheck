@@ -9,6 +9,7 @@ import parser
 import testdata
 import formatter
 import jsonformatter
+import csvformatter
 import executor
 import valgrind
 import i18n
@@ -78,7 +79,7 @@ def parse_options():
     color = (color == "YES" or (color == "AUTO" and sys.stdout.isatty()))
 
     output = optval('-o', '--output', 'resume', str).upper()
-    if output not in ("RESUME", "JSON"):
+    if output not in ("RESUME", "JSON", "CSV"):
         print(_("Invalid parameter ('%s')") % output)
         sys.exit(2)
 
@@ -121,6 +122,8 @@ def main():
     
     if opts["output"] == "JSON":
         fmt = jsonformatter.JSONFormatter(indent=4)
+    elif opts["output"] == "CSV":
+        fmt = csvformatter.CSVFormatter(indent=4)
     else:
         fmtclass = (formatter.ColoredTextFormatter if opts["color"]
                     else formatter.TextFormatter)
