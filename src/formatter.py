@@ -3,8 +3,8 @@
 import sys
 from itertools import zip_longest
 from collections import defaultdict
-import executor
-from i18n import translate as _
+from src import executor
+from src.i18n import translate as _
 
 
 class Formatter:
