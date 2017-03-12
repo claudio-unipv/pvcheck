@@ -73,6 +73,18 @@ class CSVFormatter(formatter.Formatter):
                     row.append("missing")
         return row
 
+    def _statistics_row_builder(self, header):
+        """Build a row containing the arithmetic mean of equality for each section."""
+        row = ['TOTAL']
+        for head in header:
+            if head != "TEST":
+                values = []
+                for test in self._tests:
+                    if test["sections"][head]["equality"] != 'missing':
+                        values.append(float(test["sections"][head]["equality"]))
+                row.append('%.2f' % (sum((values))/len((values))))
+        return row
+
     def end_session(self):
         header = self._header_builder()
         fp = csv.writer(self._dest)
@@ -80,6 +92,8 @@ class CSVFormatter(formatter.Formatter):
         for test in self._tests:
             row = self._row_builder(test, header)
             fp.writerow(row)
+        if len(self._tests) > 1:
+            fp.writerow(self._statistics_row_builder(header))
 
     def begin_test(self, description, cmdline_args, input, tempfile):
         self.section_number = 0
