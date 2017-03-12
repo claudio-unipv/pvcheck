@@ -65,10 +65,10 @@ class CSVFormatter(formatter.Formatter):
             row = [test["title"]]
         else:
             row = []
-        for head in header:
-            if head != "TEST":
+        for element in header:
+            if element != "TEST":
                 try:
-                    row.append(test["sections"][head]["equality"])
+                    row.append(test["sections"][element]["equality"])
                 except KeyError:
                     row.append("missing")
         return row
@@ -82,7 +82,7 @@ class CSVFormatter(formatter.Formatter):
                 for test in self._tests:
                     if test["sections"][head]["equality"] != 'missing':
                         values.append(float(test["sections"][head]["equality"]))
-                row.append('%.2f' % (sum((values))/len((values))))
+                row.append('%.2f' % (sum(values)/len(values)))
         return row
 
     def end_session(self):
