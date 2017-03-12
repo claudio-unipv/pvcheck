@@ -3,7 +3,8 @@
 import sys
 import csv
 from collections import OrderedDict
-from src import formatter, executor
+import formatter
+import executor
 
 # TO BE DEFINED
 # - wrong lines
@@ -38,18 +39,36 @@ class CSVFormatter(formatter.Formatter):
         self._tests = []
 
     def _header_builder(self):
-        header = ["Test"]
-        section_names = list(self._tests[0]["sections"].keys())
-        for name in section_names:
-            header.append(name)
+        """Build the header.
+
+        If there is only a test omits the header 'TEST'.
+
+        """
+        if len(self._tests) > 1:
+            header = ["TEST"]
+        else:
+            header = []
+        for test in self._tests:
+            section_names = list(test["sections"].keys())
+            for name in section_names:
+                if name not in header:
+                    header.append(name)
         return header
 
     def _row_builder(self, test, header):
-        row = [test["title"]]
+        """Build a row.
+
+        If there is only a test omits the test's name.
+
+        """
+        if len(self._tests) > 1:
+            row = [test["title"]]
+        else:
+            row = []
         for head in header:
-            if head != 'Test':
+            if head != "TEST":
                 try:
-                    row.append(test["sections"][head]["similar"])
+                    row.append(test["sections"][head]["equality"])
                 except KeyError:
                     row.append("missing")
         return row
@@ -65,24 +84,30 @@ class CSVFormatter(formatter.Formatter):
     def begin_test(self, description, cmdline_args, input, tempfile):
         self.section_number = 0
         t = OrderedDict([
-            ("title", description.replace('\n', ' '))
+            ("title", description)
         ])
         self._tests.append(t)
 
     def execution_result(self, cmdline_args, execution_result):
+        if execution_result.result != executor.ER_OK:
+            info = {
+                "progname": cmdline_args[0],
+                "status": execution_result.status
+            }
+            msg = self._RESULT_TABLE[execution_result.result]
+            print(msg.format(**info))
         t = self._tests[-1]
         self._sections = OrderedDict()
         t["sections"] = self._sections
 
     def comparison_result(self, expected, got, diffs, matches):
-
-            s = OrderedDict([
-                ("similar", 100 - sum(diffs)),
-                ("number", self.section_number)
-            ])
-            self.section_number += 1
-            self._sections[expected.tag] = s
+        percent_correct = '%.2f' % (((len(diffs) - sum(diffs)) * 100)/len(diffs))
+        s = OrderedDict([
+            ("equality", percent_correct)
+        ])
+        self.section_number += 1
+        self._sections[expected.tag] = s
 
     def missing_section(self, expected):
-            s = OrderedDict([("section status", "missing")])
-            self._sections["expected.tag"] = s
+        s = OrderedDict([("section status", "missing")])
+        self._sections["expected.tag"] = s

@@ -123,7 +123,7 @@ def main():
     if opts["output"] == "JSON":
         fmt = jsonformatter.JSONFormatter(indent=4)
     elif opts["output"] == "CSV":
-        fmt = csvformatter.CSVFormatter(indent=4)
+        fmt = csvformatter.CSVFormatter()
     else:
         fmtclass = (formatter.ColoredTextFormatter if opts["color"]
                     else formatter.TextFormatter)
