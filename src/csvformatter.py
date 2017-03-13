@@ -17,11 +17,11 @@ class CSVFormatter(formatter.Formatter):
         executor.ER_OK: "ok",
         executor.ER_TIMEOUT: "TIMEOUT EXPIRED: PROCESS TERMINATED",
         executor.ER_SEGFAULT:
-            "PROCESS ENDED WITH A FAILURE (SEGMENTATION FAULT)",
+        "PROCESS ENDED WITH A FAILURE (SEGMENTATION FAULT)",
         executor.ER_ERROR:
-            "PROCESS ENDED WITH A FAILURE (ERROR CODE {status})",
+        "PROCESS ENDED WITH A FAILURE (ERROR CODE {status})",
         executor.ER_NOTFILE:
-            "FAILED TO RUN THE FILE '{progname}' (the file does not exist)"
+        "FAILED TO RUN THE FILE '{progname}' (the file does not exist)"
     }
 
     def __init__(self, destination=sys.stdout):
@@ -81,7 +81,10 @@ class CSVFormatter(formatter.Formatter):
                 for test in self._tests:
                     if test["sections"][head]["equality"] != 'missing':
                         values.append(float(test["sections"][head]["equality"]))
-                row.append('%.2f' % (sum(values)/len(values)))
+                try:
+                    row.append('%.2f' % (sum(values)/len(values)))
+                except ZeroDivisionError:
+                    row.append('%.2f' % 0)
         return row
 
     def end_session(self):
@@ -120,5 +123,5 @@ class CSVFormatter(formatter.Formatter):
         self._sections[expected.tag] = s
 
     def missing_section(self, expected):
-        s = OrderedDict([("section status", "missing")])
+        s = OrderedDict([("equality", "missing")])
         self._sections["expected.tag"] = s
