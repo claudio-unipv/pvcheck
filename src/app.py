@@ -45,11 +45,7 @@ def parse_options():
     if '--list' in opts:
         _list = True
 
-    if len(args) < 1:
-        print(_(i18n.USAGE_en))
-        sys.exit(2)
-
-    if len(args) < 2 and not _list:
+    if len(args) < 1 or (len(args) < 2 and not _list):
         print(_(i18n.USAGE_en))
         sys.exit(2)
 
