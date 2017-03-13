@@ -27,7 +27,6 @@ class CSVFormatter(formatter.Formatter):
     def __init__(self, destination=sys.stdout):
         self._dest = destination
         self._obj = None
-        self.section_number = 0
         self._tests = []
 
     def _proc_args(self, args):
@@ -96,7 +95,6 @@ class CSVFormatter(formatter.Formatter):
             fp.writerow(self._statistics_row_builder(header))
 
     def begin_test(self, description, cmdline_args, input, tempfile):
-        self.section_number = 0
         t = OrderedDict([
             ("title", description)
         ])
@@ -119,7 +117,6 @@ class CSVFormatter(formatter.Formatter):
         s = OrderedDict([
             ("equality", percent_correct)
         ])
-        self.section_number += 1
         self._sections[expected.tag] = s
 
     def missing_section(self, expected):

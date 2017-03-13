@@ -26,7 +26,7 @@ def parse_options():
 
     shortopts = "hc:t:v:m:C:Vo:l:"
     longopts = ["help", "config=", "timeout=", "verbosity=",
-                "max-errors=", "color=", "valgrind", "output=", "log="]
+                "max-errors=", "color=", "valgrind", "output=", "log=", "list"]
     try:
         opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err:
@@ -41,7 +41,15 @@ def parse_options():
         print(_(i18n.HELP_en))
         sys.exit(0)
 
-    if len(args) < 2:
+    _list = False
+    if '--list' in opts:
+        _list = True
+
+    if len(args) < 1:
+        print(_(i18n.USAGE_en))
+        sys.exit(2)
+
+    if len(args) < 2 and not _list:
         print(_(i18n.USAGE_en))
         sys.exit(2)
 
@@ -88,7 +96,7 @@ def parse_options():
     valgrind = (True if '-V' in opts or '--valgrind' in opts else False)
     opts = dict(config=config, verbosity=verbosity, timeout=timeout,
                 maxerrors=maxerrors, color=color, valgrind=valgrind,
-                output=output, logfile=logfile)
+                output=output, logfile=logfile, list=_list)
 
     return (args, opts)
 
@@ -105,6 +113,14 @@ def parse_file(filename):
         sys.exit(1)
 
 
+def test_names_list(test_suite):
+    """Build a list containing all the test's names of a test suite."""
+    test_names = []
+    for test in test_suite.test_cases():
+        test_names.append(test.description)
+    return test_names
+
+
 def main():
     """Setup the environment and starts the test session."""
     (args, opts) = parse_options()
@@ -118,8 +134,18 @@ def main():
     execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
                 else executor.Executor)
     exe = execlass()
-        
-    
+
+    if opts['list']:
+        test_names = test_names_list(suite)
+        i = 1
+        for test_name in test_names:
+            try:
+                print(str(i) + ')  ' + test_name)
+            except TypeError:
+                print(str(i) + ')   NoName')
+            i += 1
+        exit()
+
     if opts["output"] == "JSON":
         fmt = jsonformatter.JSONFormatter(indent=4)
     elif opts["output"] == "CSV":
