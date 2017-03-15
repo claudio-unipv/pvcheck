@@ -119,13 +119,31 @@ def test_names_list(test_suite):
 
 def main():
     """Setup the environment and starts the test session."""
+    test_number = None
     (args, opts) = parse_options()
 
     cfg = parse_file(opts["config"])
-    td = parse_file(args[0])
+
+    if len(args) == 3:
+        test_number = int(args[0]) - 1
+        td = parse_file(args[1])
+    else:
+        td = parse_file(args[0])
+
     if opts['valgrind']:
         cfg.append(testdata.Section('VALGRIND', []))
+
     suite = testdata.TestSuite(cfg + td)
+
+    if test_number is not None:
+        try:
+            if test_number < 0:
+                raise IndexError
+            suite = suite.test_cases()[test_number]
+        except IndexError:
+            print("\nTest number " + str(test_number + 1) + " doesn't exist.\n")
+            print("Use the 'list' option to list all the available tests.\n")
+            exit()
 
     execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
                 else executor.Executor)
@@ -159,8 +177,13 @@ def main():
         logfmt = jsonformatter.JSONFormatter(logfile)
         combfmt = formatter.CombinedFormatter([fmt, logfmt])
         pvc = pvcheck.PvCheck(exe, combfmt)
-        failures = pvc.exec_suite(suite, args[1:],
-                                  timeout=opts["timeout"])
+        if test_number is None:
+            failures = pvc.exec_suite(suite, args[1:],
+                                      timeout=opts["timeout"])
+        else:
+            failures = pvc.exec_single_test(suite, args[2:],
+                                            timeout=opts["timeout"])
+
         retcode = min(failures, 254)
         logfile.write("\n")
     sys.exit(retcode)
