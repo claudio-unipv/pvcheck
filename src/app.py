@@ -117,6 +117,19 @@ def test_names_list(test_suite):
     return test_names
 
 
+def print_test_names_list(test_suite):
+    """Print a list containing all the test's names of a test suite."""
+    test_names = test_names_list(test_suite)
+    i = 1
+    for test_name in test_names:
+        try:
+            print(str(i) + ')  ' + test_name)
+        except TypeError:
+            print(str(i) + ')   NoName')
+        i += 1
+    exit(0)
+
+
 def main():
     """Setup the environment and starts the test session."""
     test_number = None
@@ -143,22 +156,14 @@ def main():
         except IndexError:
             print("\nTest number " + str(test_number + 1) + " doesn't exist.\n")
             print("Use the 'list' option to list all the available tests.\n")
-            exit()
+            exit(2)
 
     execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
                 else executor.Executor)
     exe = execlass()
 
     if opts['list']:
-        test_names = test_names_list(suite)
-        i = 1
-        for test_name in test_names:
-            try:
-                print(str(i) + ')  ' + test_name)
-            except TypeError:
-                print(str(i) + ')   NoName')
-            i += 1
-        exit()
+        print_test_names_list(suite)
 
     if opts["output"] == "JSON":
         fmt = jsonformatter.JSONFormatter(indent=4)
