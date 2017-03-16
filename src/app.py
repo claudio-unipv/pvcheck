@@ -124,10 +124,10 @@ def main():
 
     cfg = parse_file(opts["config"])
 
-    if len(args) == 3:
+    try:
         test_number = int(args[0]) - 1
         td = parse_file(args[1])
-    else:
+    except ValueError:
         td = parse_file(args[0])
 
     if opts['valgrind']:
