@@ -41,9 +41,10 @@ def parse_options():
         print(_(i18n.HELP_en))
         sys.exit(0)
 
-    _list = False
     if '--list' in opts:
         _list = True
+    else:
+        _list = False
 
     if len(args) < 1 or (len(args) < 2 and not _list):
         print(_(i18n.USAGE_en))
@@ -110,7 +111,7 @@ def parse_file(filename):
 
 
 def test_names_list(test_suite):
-    """Build a list containing all the test's names of a test suite."""
+    """Build a list containing all the test names of a test suite."""
     test_names = []
     for test in test_suite.test_cases():
         test_names.append(test.description)
@@ -118,7 +119,7 @@ def test_names_list(test_suite):
 
 
 def print_test_names_list(test_suite):
-    """Print a list containing all the test's names of a test suite."""
+    """Print a list containing all the test names of a test suite."""
     test_names = test_names_list(test_suite)
     i = 1
     for test_name in test_names:
@@ -132,8 +133,9 @@ def print_test_names_list(test_suite):
 
 def main():
     """Setup the environment and starts the test session."""
-    test_number = None
     (args, opts) = parse_options()
+
+    test_number = None
 
     cfg = parse_file(opts["config"])
 
