@@ -131,25 +131,51 @@ def print_test_names_list(test_suite):
     exit(0)
 
 
+def initialize_test_subset(args):
+    """Setup the environment to test some tests of a test suite.
+
+    Return: - a list containing all the test numbers to test
+            - the C program position in the args list
+            - a test file parsed
+
+    """
+    test_numbers = [int(args[0]) - 1]
+    program_index = 2
+    for arg in args[1:]:
+        try:
+            test_numbers.append(int(arg) - 1)
+            program_index += 1
+        except ValueError:
+            td = parse_file(arg)
+            break
+    return test_numbers, program_index, td
+
+
+def get_test_cases_of_test_subset(test_numbers, test_suite):
+    """Search and return the test cases of a test subset."""
+    test_cases = []
+    for test_number in test_numbers:
+        try:
+            if test_number < 0:
+                raise IndexError
+            test_cases.append(test_suite.test_cases()[test_number])
+        except IndexError:
+            print("\nTest number " + str(test_number + 1) + " doesn't exist.\n")
+            print("Use the 'list' option to list all the available tests.\n")
+            exit(2)
+    return test_cases
+
+
 def main():
     """Setup the environment and starts the test session."""
     (args, opts) = parse_options()
 
-    test_numbers = []
+    test_numbers = None
 
     cfg = parse_file(opts["config"])
 
     try:
-        test_numbers.append(int(args[0]) - 1)
-        i = 1
-        for arg in args[1:]:
-            try:
-                test_numbers.append(int(arg) - 1)
-                i += 1
-            except ValueError:
-                i += 1
-                td = parse_file(arg)
-                break
+        test_numbers, program_index, td = initialize_test_subset(args)
     except ValueError:
         td = parse_file(args[0])
 
@@ -158,18 +184,8 @@ def main():
 
     suite = testdata.TestSuite(cfg + td)
 
-    if len(test_numbers) != 0:
-        test_cases = []
-        for test_number in test_numbers:
-            try:
-                if test_number < 0:
-                    raise IndexError
-                test_cases.append(suite.test_cases()[test_number])
-            except IndexError:
-                print("\nTest number " + str(test_number + 1) + " doesn't exist.\n")
-                print("Use the 'list' option to list all the available tests.\n")
-                exit(2)
-        suite._cases = test_cases
+    if test_numbers is not None:
+        suite._cases = get_test_cases_of_test_subset(test_numbers, suite)
 
     execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
                 else executor.Executor)
@@ -199,8 +215,8 @@ def main():
             failures = pvc.exec_suite(suite, args[1:],
                                       timeout=opts["timeout"])
         else:
-            failures = pvc.exec_suite(suite, args[i:],
-                                            timeout=opts["timeout"])
+            failures = pvc.exec_suite(suite, args[program_index:],
+                                      timeout=opts["timeout"])
 
         retcode = min(failures, 254)
         logfile.write("\n")
