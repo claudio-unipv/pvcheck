@@ -135,13 +135,21 @@ def main():
     """Setup the environment and starts the test session."""
     (args, opts) = parse_options()
 
-    test_number = None
+    test_numbers = []
 
     cfg = parse_file(opts["config"])
 
     try:
-        test_number = int(args[0]) - 1
-        td = parse_file(args[1])
+        test_numbers.append(int(args[0]) - 1)
+        i = 1
+        for arg in args[1:]:
+            try:
+                test_numbers.append(int(arg) - 1)
+                i += 1
+            except ValueError:
+                i += 1
+                td = parse_file(arg)
+                break
     except ValueError:
         td = parse_file(args[0])
 
@@ -150,15 +158,18 @@ def main():
 
     suite = testdata.TestSuite(cfg + td)
 
-    if test_number is not None:
-        try:
-            if test_number < 0:
-                raise IndexError
-            suite = suite.test_cases()[test_number]
-        except IndexError:
-            print("\nTest number " + str(test_number + 1) + " doesn't exist.\n")
-            print("Use the 'list' option to list all the available tests.\n")
-            exit(2)
+    if len(test_numbers) != 0:
+        test_cases = []
+        for test_number in test_numbers:
+            try:
+                if test_number < 0:
+                    raise IndexError
+                test_cases.append(suite.test_cases()[test_number])
+            except IndexError:
+                print("\nTest number " + str(test_number + 1) + " doesn't exist.\n")
+                print("Use the 'list' option to list all the available tests.\n")
+                exit(2)
+        suite._cases = test_cases
 
     execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
                 else executor.Executor)
@@ -184,11 +195,11 @@ def main():
         logfmt = jsonformatter.JSONFormatter(logfile)
         combfmt = formatter.CombinedFormatter([fmt, logfmt])
         pvc = pvcheck.PvCheck(exe, combfmt)
-        if test_number is None:
+        if test_numbers is None:
             failures = pvc.exec_suite(suite, args[1:],
                                       timeout=opts["timeout"])
         else:
-            failures = pvc.exec_single_test(suite, args[2:],
+            failures = pvc.exec_suite(suite, args[i:],
                                             timeout=opts["timeout"])
 
         retcode = min(failures, 254)
