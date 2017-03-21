@@ -26,7 +26,7 @@ def parse_options():
 
     shortopts = "hc:t:v:m:C:Vo:l:"
     longopts = ["help", "config=", "timeout=", "verbosity=",
-                "max-errors=", "color=", "valgrind", "output=", "log="]
+                "max-errors=", "color=", "valgrind", "format=", "log="]
     try:
         opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err:
@@ -78,9 +78,9 @@ def parse_options():
         sys.exit(2)
     color = (color == "YES" or (color == "AUTO" and sys.stdout.isatty()))
 
-    output = optval('-o', '--output', 'resume', str).upper()
-    if output not in ("RESUME", "JSON", "CSV"):
-        print(_("Invalid parameter ('%s')") % output)
+    format = optval('-f', '--format', 'resume', str).upper()
+    if format not in ("RESUME", "JSON", "CSV"):
+        print(_("Invalid parameter ('%s')") % format)
         sys.exit(2)
 
     logfile = optval('-l', '--log', _DEFAULT_LOG_FILE, str)
@@ -88,7 +88,7 @@ def parse_options():
     valgrind = (True if '-V' in opts or '--valgrind' in opts else False)
     opts = dict(config=config, verbosity=verbosity, timeout=timeout,
                 maxerrors=maxerrors, color=color, valgrind=valgrind,
-                output=output, logfile=logfile)
+                format=format, logfile=logfile)
 
     return (args, opts)
 
@@ -175,9 +175,9 @@ def main():
                 else executor.Executor)
     exe = execlass()
 
-    if opts["output"] == "JSON":
+    if opts["format"] == "JSON":
         fmt = jsonformatter.JSONFormatter(indent=4)
-    elif opts["output"] == "CSV":
+    elif opts["format"] == "CSV":
         fmt = csvformatter.CSVFormatter()
     else:
         fmtclass = (formatter.ColoredTextFormatter if opts["color"]
