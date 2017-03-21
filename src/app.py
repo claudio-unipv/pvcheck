@@ -41,7 +41,7 @@ def parse_options():
         print(_(i18n.HELP_en))
         sys.exit(0)
 
-    if len(args) < 1 or (args[0] in ("list", "ls") and len(args) != 2):
+    if len(args) < 1:
         print(_(i18n.USAGE_en))
         sys.exit(2)
 
@@ -170,6 +170,9 @@ def main():
     cfg = parse_file(opts["config"])
 
     if args[0] in ("list", "ls"):
+        if len(args) != 2:
+            print("Usage: list testfile")
+            exit(1)
         td = parse_file(args[1])
         suite = testdata.TestSuite(cfg + td)
         print_test_names_list(suite)
