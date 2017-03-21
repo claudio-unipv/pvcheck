@@ -112,6 +112,18 @@ class TestSuite:
         """Return the list of test cases in the suite."""
         return self._cases
 
+    def test_case(self, test_number):
+        """Return a test case."""
+        try:
+            if test_number < 0:
+                raise IndexError
+            test_case = self.test_cases()[test_number]
+        except IndexError:
+            print("\nTest number " + str(test_number + 1) + " doesn't exist.\n")
+            print("Use 'list' to list all the available tests.\n")
+            exit(2)
+        return test_case
+
     def _group_tests(self, sections):
         name = None
         lst = []

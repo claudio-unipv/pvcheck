@@ -126,46 +126,23 @@ def print_test_names_list(test_suite):
     exit(0)
 
 
-def initialize_test_subset(args):
-    """Setup the environment to test some tests of a test suite.
+def initialize_single_test(args):
+    """Setup the environment to test only one test of a test suite.
 
-    Return: - a list containing all the test numbers to test
-            - the C program position in the args list
+    Return: - the test's index
             - a test file parsed
 
     """
-    test_numbers = [int(args[0]) - 1]
-    program_index = 2
-    for arg in args[1:]:
-        try:
-            test_numbers.append(int(arg) - 1)
-            program_index += 1
-        except ValueError:
-            td = parse_file(arg)
-            break
-    return test_numbers, program_index, td
-
-
-def get_test_cases_of_test_subset(test_numbers, test_suite):
-    """Search and return the test cases of a test subset."""
-    test_cases = []
-    for test_number in test_numbers:
-        try:
-            if test_number < 0:
-                raise IndexError
-            test_cases.append(test_suite.test_cases()[test_number])
-        except IndexError:
-            print("\nTest number " + str(test_number + 1) + " doesn't exist.\n")
-            print("Use the 'list' option to list all the available tests.\n")
-            exit(2)
-    return test_cases
+    test_number = int(args[0]) - 1
+    td = parse_file(args[2])
+    return test_number, td
 
 
 def main():
     """Setup the environment and starts the test session."""
     (args, opts) = parse_options()
 
-    test_numbers = None
+    test_number = None
 
     cfg = parse_file(opts["config"])
 
@@ -179,7 +156,10 @@ def main():
         exit(0)
 
     try:
-        test_numbers, program_index, td = initialize_test_subset(args)
+        test_number, td = initialize_single_test(args)
+        if args[1] != 'run':
+            print("Usage: N run testfile executable")
+            exit(1)
     except ValueError:
         td = parse_file(args[0])
 
@@ -188,8 +168,8 @@ def main():
 
     suite = testdata.TestSuite(cfg + td)
 
-    if test_numbers is not None:
-        suite._cases = get_test_cases_of_test_subset(test_numbers, suite)
+    if test_number is not None:
+        suite = suite.test_case(test_number)
 
     execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
                 else executor.Executor)
@@ -212,12 +192,12 @@ def main():
         logfmt = jsonformatter.JSONFormatter(logfile)
         combfmt = formatter.CombinedFormatter([fmt, logfmt])
         pvc = pvcheck.PvCheck(exe, combfmt)
-        if test_numbers is None:
+        if test_number is None:
             failures = pvc.exec_suite(suite, args[1:],
                                       timeout=opts["timeout"])
         else:
-            failures = pvc.exec_suite(suite, args[program_index:],
-                                      timeout=opts["timeout"])
+            failures = pvc.exec_single_test(suite, args[3:],
+                                            timeout=opts["timeout"])
 
         retcode = min(failures, 254)
         logfile.write("\n")
