@@ -26,7 +26,7 @@ def parse_options():
 
     shortopts = "hc:t:v:m:C:Vo:l:"
     longopts = ["help", "config=", "timeout=", "verbosity=",
-                "max-errors=", "color=", "valgrind", "output=", "log=", "list"]
+                "max-errors=", "color=", "valgrind", "output=", "log="]
     try:
         opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err:
@@ -41,12 +41,7 @@ def parse_options():
         print(_(i18n.HELP_en))
         sys.exit(0)
 
-    if '--list' in opts:
-        _list = True
-    else:
-        _list = False
-
-    if len(args) < 1 or (len(args) < 2 and not _list):
+    if len(args) < 1 or (args[0] in ("list", "ls") and len(args) != 2):
         print(_(i18n.USAGE_en))
         sys.exit(2)
 
@@ -93,7 +88,7 @@ def parse_options():
     valgrind = (True if '-V' in opts or '--valgrind' in opts else False)
     opts = dict(config=config, verbosity=verbosity, timeout=timeout,
                 maxerrors=maxerrors, color=color, valgrind=valgrind,
-                output=output, logfile=logfile, list=_list)
+                output=output, logfile=logfile)
 
     return (args, opts)
 
@@ -174,6 +169,12 @@ def main():
 
     cfg = parse_file(opts["config"])
 
+    if args[0] in ("list", "ls"):
+        td = parse_file(args[1])
+        suite = testdata.TestSuite(cfg + td)
+        print_test_names_list(suite)
+        exit(0)
+
     try:
         test_numbers, program_index, td = initialize_test_subset(args)
     except ValueError:
@@ -190,9 +191,6 @@ def main():
     execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
                 else executor.Executor)
     exe = execlass()
-
-    if opts['list']:
-        print_test_names_list(suite)
 
     if opts["output"] == "JSON":
         fmt = jsonformatter.JSONFormatter(indent=4)
