@@ -124,4 +124,4 @@ class CSVFormatter(formatter.Formatter):
 
     def missing_section(self, expected):
         s = OrderedDict([("equality", "MISS")])
-        self._sections["One or more sections MISSING"] = s
+        self._sections[expected.tag] = s
