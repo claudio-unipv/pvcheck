@@ -142,7 +142,7 @@ def main():
     """Setup the environment and starts the test session."""
     (args, opts) = parse_options()
 
-    test_number = None
+    test_index = None
 
     cfg = parse_file(opts["config"])
 
@@ -156,7 +156,7 @@ def main():
         exit(0)
 
     try:
-        test_number, td = initialize_single_test(args)
+        test_index, td = initialize_single_test(args)
         if args[1] != 'run':
             print("Usage: N run testfile executable")
             exit(1)
@@ -168,8 +168,8 @@ def main():
 
     suite = testdata.TestSuite(cfg + td)
 
-    if test_number is not None:
-        suite = suite.test_case(test_number)
+    if test_index is not None:
+        suite = suite.test_case(test_index)
 
     execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
                 else executor.Executor)
@@ -192,7 +192,7 @@ def main():
         logfmt = jsonformatter.JSONFormatter(logfile)
         combfmt = formatter.CombinedFormatter([fmt, logfmt])
         pvc = pvcheck.PvCheck(exe, combfmt)
-        if test_number is None:
+        if test_index is None:
             failures = pvc.exec_suite(suite, args[1:],
                                       timeout=opts["timeout"])
         else:

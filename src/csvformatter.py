@@ -69,7 +69,7 @@ class CSVFormatter(formatter.Formatter):
                 try:
                     row.append(test["sections"][element]["equality"])
                 except KeyError:
-                    row.append("missing")
+                    row.append("MISS")
         return row
 
     def _statistics_row_builder(self, header):
@@ -79,7 +79,7 @@ class CSVFormatter(formatter.Formatter):
             if head != "TEST":
                 values = []
                 for test in self._tests:
-                    if test["sections"][head]["equality"] != 'missing':
+                    if test["sections"][head]["equality"] != 'MISS':
                         values.append(float(test["sections"][head]["equality"]))
                 try:
                     row.append('%.2f' % (sum(values)/len(values)))
@@ -123,5 +123,5 @@ class CSVFormatter(formatter.Formatter):
         self._sections[expected.tag] = s
 
     def missing_section(self, expected):
-        s = OrderedDict([("equality", "missing")])
-        self._sections["expected.tag"] = s
+        s = OrderedDict([("equality", "MISS")])
+        self._sections["One or more sections MISSING"] = s
