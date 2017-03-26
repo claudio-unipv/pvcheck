@@ -14,14 +14,14 @@ import executor
 
 class CSVFormatter(formatter.Formatter):
     _RESULT_TABLE = {
-        executor.ER_OK: "ok",
-        executor.ER_TIMEOUT: "TIMEOUT EXPIRED: PROCESS TERMINATED",
+        executor.ER_OK: "0",
+        executor.ER_TIMEOUT: "1",
         executor.ER_SEGFAULT:
-        "PROCESS ENDED WITH A FAILURE (SEGMENTATION FAULT)",
+        "2",
         executor.ER_ERROR:
-        "PROCESS ENDED WITH A FAILURE (ERROR CODE {status})",
+        "3",
         executor.ER_NOTFILE:
-        "FAILED TO RUN THE FILE '{progname}' (the file does not exist)"
+        "4"
     }
 
     def __init__(self, destination=sys.stdout):
@@ -47,6 +47,7 @@ class CSVFormatter(formatter.Formatter):
             header = ["TEST"]
         else:
             header = []
+        header.append("CODE")
         for test in self._tests:
             section_names = list(test["sections"].keys())
             for name in section_names:
@@ -65,22 +66,27 @@ class CSVFormatter(formatter.Formatter):
         else:
             row = []
         for element in header:
-            if element != "TEST":
+            if element == "CODE":
+                row.append(test["status"])
+            elif element != "TEST":
                 try:
                     row.append(test["sections"][element]["equality"])
                 except KeyError:
-                    row.append("MISS")
+                    row.append("")
         return row
 
     def _statistics_row_builder(self, header):
         """Build a row containing the arithmetic mean of equality for each section."""
-        row = ['TOTAL']
+        row = ["TOTAL", ""]
         for head in header:
-            if head != "TEST":
+            if head not in ("TEST", "CODE"):
                 values = []
                 for test in self._tests:
-                    if test["sections"][head]["equality"] != 'MISS':
-                        values.append(float(test["sections"][head]["equality"]))
+                    try:
+                        if test["sections"][head]["equality"] != 'MISS':
+                            values.append(float(test["sections"][head]["equality"]))
+                    except KeyError:
+                        pass
                 try:
                     row.append('%.2f' % (sum(values)/len(values)))
                 except ZeroDivisionError:
@@ -104,15 +110,9 @@ class CSVFormatter(formatter.Formatter):
         self._tests.append(t)
 
     def execution_result(self, cmdline_args, execution_result):
-        if execution_result.result != executor.ER_OK:
-            info = {
-                "progname": cmdline_args[0],
-                "status": execution_result.status
-            }
-            msg = self._RESULT_TABLE[execution_result.result]
-            print(msg.format(**info))
         t = self._tests[-1]
         self._sections = OrderedDict()
+        t["status"] = self._RESULT_TABLE[execution_result.result]
         t["sections"] = self._sections
 
     def comparison_result(self, expected, got, diffs, matches):
