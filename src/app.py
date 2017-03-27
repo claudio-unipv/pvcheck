@@ -78,8 +78,8 @@ def parse_options():
         sys.exit(2)
     color = (color == "YES" or (color == "AUTO" and sys.stdout.isatty()))
 
-    format = optval('-f', '--format', 'resume', str).upper()
-    if format not in ("RESUME", "JSON", "CSV"):
+    format = optval('-f', '--format', 'resume', str)
+    if format not in ("resume", "json", "csv"):
         print(_("Invalid parameter ('%s')") % format)
         sys.exit(2)
 
@@ -175,9 +175,9 @@ def main():
                 else executor.Executor)
     exe = execlass()
 
-    if opts["format"] == "JSON":
+    if opts["format"] == "json":
         fmt = jsonformatter.JSONFormatter(indent=4)
-    elif opts["format"] == "CSV":
+    elif opts["format"] == "csv":
         fmt = csvformatter.CSVFormatter()
     else:
         fmtclass = (formatter.ColoredTextFormatter if opts["color"]
