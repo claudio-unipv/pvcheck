@@ -51,7 +51,7 @@ Options:
   -c, --config=FILE        uses the specified configuration file.
   -C, --color=YES|NO|AUTO  enable or disable colored output (default AUTO).
   -V, --valgrind           use Valgrind (if installed) to check memory usage.
-  -o, --output=RESUME|JSON|CSV select the output type.
+  -f, --format=resume|json|csv select the output type.
   -l, --log=FILE           specify the name of the file used for logging.  The
                            default is ~/.pvcheck.log.
   -h, --help               print this message and exit.
@@ -77,7 +77,7 @@ Opzioni:
                            AUTO).
   -V, --valgrind           utilizza Valgrind (se installato) per controllare
                            l'utilizzo della memoria.
-  -o, --output=RESUME|JSON|CSV seleziona il tipo di output.
+  -f, --format=resume|json|csv seleziona il tipo di output.
   -l, --log=FILE           specifica il nome del file usato per il logging.
                            Il default è ~/.pvcheck.log.
   -h, --help               stampa questo messaggio ed esce.
@@ -126,6 +126,8 @@ successes $ successi
 warnings $ avvertimenti
 errors $ errori
 <program> $ <programma>
+CODE $ CODICE
+TOTAL $ TOTALE
 """
 
 _translations = {

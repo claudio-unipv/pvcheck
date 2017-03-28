@@ -5,6 +5,7 @@ import csv
 from collections import OrderedDict
 import formatter
 import executor
+from i18n import translate as _
 
 # TO BE DEFINED
 # - wrong lines
@@ -29,11 +30,6 @@ class CSVFormatter(formatter.Formatter):
         self._obj = None
         self._tests = []
 
-    def _proc_args(self, args):
-        return [(a if a is not executor.ARG_TMPFILE
-                 else "<temp.file>")
-                for a in args]
-
     def begin_session(self):
         self._tests = []
 
@@ -47,7 +43,7 @@ class CSVFormatter(formatter.Formatter):
             header = ["TEST"]
         else:
             header = []
-        header.append("CODE")
+        header.append(_("CODE"))
         for test in self._tests:
             section_names = list(test["sections"].keys())
             for name in section_names:
@@ -66,7 +62,7 @@ class CSVFormatter(formatter.Formatter):
         else:
             row = []
         for element in header:
-            if element == "CODE":
+            if element == _("CODE"):
                 row.append(test["status"])
             elif element != "TEST":
                 try:
@@ -77,9 +73,9 @@ class CSVFormatter(formatter.Formatter):
 
     def _statistics_row_builder(self, header):
         """Build a row containing the arithmetic mean of equality for each section."""
-        row = ["TOTAL", ""]
+        row = [_("TOTAL"), ""]
         for head in header:
-            if head not in ("TEST", "CODE"):
+            if head not in ("TEST", _("CODE")):
                 values = []
                 for test in self._tests:
                     try:
