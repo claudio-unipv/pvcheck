@@ -130,6 +130,8 @@ CODE $ CODICE
 TOTAL $ TOTALE
 Test number %d doesn't exist. $ Il test numero %d non esiste.
 Use 'list' to list all the available tests. $ Utilizza 'list' per vedere tutti i test disponibili.
+Usage: list testfile $ Utilizzo: list fileditest
+Usage: N run testfile executable $ Utilizzo: N run fileditest eseguibile
 """
 
 _translations = {

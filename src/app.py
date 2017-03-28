@@ -14,7 +14,6 @@ import executor
 import valgrind
 import i18n
 
-
 __doc__ = i18n.HELP_en
 _ = i18n.translate
 
@@ -148,7 +147,7 @@ def main():
 
     if args[0] in ("list", "ls"):
         if len(args) != 2:
-            print("Usage: list testfile")
+            print(_("Usage: list testfile"))
             exit(1)
         td = parse_file(args[1])
         suite = testdata.TestSuite(cfg + td)
@@ -158,7 +157,7 @@ def main():
     try:
         test_index, td = initialize_single_test(args)
         if args[1] != 'run':
-            print("Usage: N run testfile executable")
+            print(_("Usage: N run testfile executable"))
             exit(1)
     except ValueError:
         td = parse_file(args[0])
