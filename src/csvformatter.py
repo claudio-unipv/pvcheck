@@ -29,6 +29,11 @@ class CSVFormatter(formatter.Formatter):
         self._dest = destination
         self._obj = None
         self._tests = []
+        
+    def _proc_args(self, args):
+        return [(a if a is not executor.ARG_TMPFILE
+                 else "<temp.file>")
+                for a in args]
 
     def begin_session(self):
         self._tests = []
