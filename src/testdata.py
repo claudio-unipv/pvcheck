@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 from itertools import chain
+from i18n import translate as _
 
 
 class Section:
@@ -119,8 +120,10 @@ class TestSuite:
                 raise IndexError
             test_case = self.test_cases()[test_number]
         except IndexError:
-            print("\nTest number " + str(test_number + 1) + " doesn't exist.\n")
-            print("Use 'list' to list all the available tests.\n")
+            fmt = _("Test number %d doesn't exist.")
+            msg = fmt % (test_number + 1)
+            print("\n" + msg + "\n")
+            print(_("Use 'list' to list all the available tests.") + "\n")
             exit(2)
         return test_case
 
