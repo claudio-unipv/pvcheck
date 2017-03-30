@@ -101,4 +101,4 @@ class JSONFormatter(formatter.Formatter):
         
     def missing_section(self, expected):
         s = OrderedDict([("section status", "missing")])
-        self._sections["expected.tag"] = s
+        self._sections[expected.tag] = s
