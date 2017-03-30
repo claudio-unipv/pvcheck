@@ -40,7 +40,7 @@ def parse_options():
         print(_(i18n.HELP_en))
         sys.exit(0)
 
-    if len(args) < 1:
+    if len(args) < 2:
         print(_(i18n.USAGE_en))
         sys.exit(2)
 
