@@ -13,6 +13,7 @@ import csvformatter
 import executor
 import valgrind
 import i18n
+import exporter
 
 __doc__ = i18n.HELP_en
 _ = i18n.translate
@@ -172,25 +173,7 @@ def main():
         suite = suite.test_case(single_test_index)
 
     if args[1] == 'export':
-        test = suite
-        try:
-            file_name = (test.description + ".dat").replace(' ', '_')
-        except TypeError:
-            file_name = ("NoName" + ".dat")
-        _input = test.find_section_content(".INPUT", None)
-        _file = test.find_section_content(".FILE", None)
-        if (_input is not None) or (_file is not None):
-            with open(file_name, 'w') as f:
-                if _input is not None:
-                    f.write(_input)
-                if _file is not None:
-                    f.write(_file)
-            exit(0)
-        else:
-            fmt = _("Error: Can't export test number %d.")
-            msg = fmt % (single_test_index + 1)
-            print("\n" + msg + "\n")
-            exit(1)
+        exporter.export(suite, single_test_index)
 
     execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
                 else executor.Executor)
