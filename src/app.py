@@ -116,18 +116,12 @@ def print_test_names_list(test_suite):
     """Print a list containing all the test names of a test suite."""
     test_names = test_names_list(test_suite)
     test_number = 1
-    limit_test_number = 10
-    exponent = 1
     number_of_spaces = int(math.log10(len(test_names)) + 1)
     for test_name in test_names:
-        if test_number == limit_test_number:
-            exponent += 1
-            number_of_spaces -= 1
-            limit_test_number = pow(10, exponent)
         try:
-            print(str(test_number) + (number_of_spaces * ' ') + test_name)
+            print('{:{align}{width}}'.format(str(test_number), align='>', width=number_of_spaces) + ' ' + test_name)
         except TypeError:
-            print(str(test_number) + (number_of_spaces * ' ') + 'NoName')
+            print('{:{align}{width}}'.format(str(test_number), align='>', width=number_of_spaces) + ' ' + 'NoName')
         test_number += 1
     exit(0)
 
