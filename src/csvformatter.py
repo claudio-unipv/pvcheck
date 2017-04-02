@@ -86,8 +86,10 @@ class CSVFormatter(formatter.Formatter):
                     try:
                         if test["sections"][head]["equality"] != 'MISS':
                             values.append(float(test["sections"][head]["equality"]))
+                        else:
+                            values.append(0)
                     except KeyError:
-                        pass
+                        values.append(0)
                 try:
                     row.append('%.2f' % (sum(values)/len(values)))
                 except ZeroDivisionError:
