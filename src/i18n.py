@@ -132,6 +132,7 @@ Test number %d doesn't exist. $ Il test numero %d non esiste.
 Use 'list' to list all the available tests. $ Utilizza 'list' per vedere tutti i test disponibili.
 Usage: list testfile $ Utilizzo: list fileditest
 Usage: N run testfile executable $ Utilizzo: N run fileditest eseguibile
+Error: Can't export test number %d. $ Errore: Impossibile esportare il test numero %d.
 """
 
 _translations = {

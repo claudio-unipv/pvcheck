@@ -142,7 +142,7 @@ def main():
     """Setup the environment and starts the test session."""
     (args, opts) = parse_options()
 
-    test_index = None
+    single_test_index = None
 
     cfg = parse_file(opts["config"])
 
@@ -156,9 +156,9 @@ def main():
         exit(0)
 
     try:
-        test_index, td = initialize_single_test(args)
-        if args[1] != 'run':
-            print(_("Usage: N run testfile executable"))
+        single_test_index, td = initialize_single_test(args)
+        if args[1] not in ('run', 'export'):
+            print(_("Usage: N run[or export] testfile executable"))
             exit(1)
     except ValueError:
         td = parse_file(args[0])
@@ -168,8 +168,29 @@ def main():
 
     suite = testdata.TestSuite(cfg + td)
 
-    if test_index is not None:
-        suite = suite.test_case(test_index)
+    if single_test_index is not None:
+        suite = suite.test_case(single_test_index)
+
+    if args[1] == 'export':
+        test = suite
+        try:
+            file_name = (test.description + ".dat").replace(' ', '_')
+        except TypeError:
+            file_name = ("NoName" + ".dat")
+        _input = test.find_section_content(".INPUT", None)
+        _file = test.find_section_content(".FILE", None)
+        if (_input is not None) or (_file is not None):
+            with open(file_name, 'w') as f:
+                if _input is not None:
+                    f.write(_input)
+                if _file is not None:
+                    f.write(_file)
+            exit(0)
+        else:
+            fmt = _("Error: Can't export test number %d.")
+            msg = fmt % (single_test_index + 1)
+            print("\n" + msg + "\n")
+            exit(1)
 
     execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
                 else executor.Executor)
@@ -192,7 +213,7 @@ def main():
         logfmt = jsonformatter.JSONFormatter(logfile)
         combfmt = formatter.CombinedFormatter([fmt, logfmt])
         pvc = pvcheck.PvCheck(exe, combfmt)
-        if test_index is None:
+        if single_test_index is None:
             failures = pvc.exec_suite(suite, args[1:],
                                       timeout=opts["timeout"])
         else:
