@@ -34,55 +34,6 @@ def translate(text):
 ############################################################
 # Application messages
 ############################################################
-
-USAGE_en = ("Usage: pvcheck [OPTIONS]... TEST_FILE EXECUTABLE " +
-            "[EXECUTABLE_PARAMS]...")
-
-HELP_en = """Run tests to verify the correctness of a program.
-
-Options:
-  -v, --verbosity=L        set the verbosity level, where the level must be
-                           an integer between 0 (minimum) and 4 (maximum).
-                           The default value is 3.
-  -t, --timeout=T          set how many seconds it should be waited for the
-                           termination of the program.  The default is 10
-                           seconds.
-  -m, --max-errors=N       reports up to N errors per section (default 4).
-  -c, --config=FILE        uses the specified configuration file.
-  -C, --color=YES|NO|AUTO  enable or disable colored output (default AUTO).
-  -V, --valgrind           use Valgrind (if installed) to check memory usage.
-  -f, --format=resume|json|csv select the output type.
-  -l, --log=FILE           specify the name of the file used for logging.  The
-                           default is ~/.pvcheck.log.
-  -h, --help               print this message and exit.
-"""
-
-USAGE_it = ("Utilizzo: pvcheck [OPZIONI...] " +
-            "FILE_OUTPUT_ATTESO FILE_ESEGUIBILE " +
-            "[PARAMETRI_ESEGUIBILE]...")
-
-HELP_it = """Esegue dei test per verificare la correttezza di un programma.
-
-Opzioni:
-  -v, --verbosity=L        imposto il livello di verbosità.  Il livello
-                           deve essere un valore intero tra 0 (minimo) e 3
-                           (massimo).  Il default è 2.
-  -t, --timeout=T          imposta per quanti secondi bisogna attendere
-                           la terminazione del programma.  Il default è
-                           pari a 10 secondi.
-  -m, --max-errors=N       riporta fino ad un massimo di N errori per
-                           sezione (default 4).
-  -c, --config=FILE        utilizza il file di configurazione specificato.
-  -C, --color=YES|NO|AUTO  abilita o disabilita l'output colorato (default
-                           AUTO).
-  -V, --valgrind           utilizza Valgrind (se installato) per controllare
-                           l'utilizzo della memoria.
-  -f, --format=resume|json|csv seleziona il tipo di output.
-  -l, --log=FILE           specifica il nome del file usato per il logging.
-                           Il default è ~/.pvcheck.log.
-  -h, --help               stampa questo messaggio ed esce.
-"""
-
 _strings = {}
 _missing_translation = set()
 _lang = 'en'
@@ -127,6 +78,8 @@ missing section $ sezione mancante
 empty section $ sezione vuota
 extra section $ sezione extra
 Invalid parameter ('%s') $ Parametro non valido ('%s')
+Invalid parameter ('%d') $ Parametro non valido('%d')
+"Invalid parameter ('%f') $ Parametro non valido('%f')
 TIMEOUT EXPIRED: PROCESS TERMINATED $ TEMPO LIMITE SCADUTO: PROCESSO TERMINATO
 PROCESS ENDED WITH A FAILURE $ PROCESSO TERMINATO CON UN FALLIMENTO
 (SEGMENTATION FAULT) $ (SEGMENTATION FAULT)
@@ -150,8 +103,6 @@ Error: Can't export test number %d. $ Errore: Impossibile esportare il test nume
 
 _translations = {
     'it': {
-        USAGE_en: USAGE_it,
-        HELP_en: HELP_it
     }
 }
 _translations['it'].update(

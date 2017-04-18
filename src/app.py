@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-import getopt
 import argparse
 import os
 import math
@@ -16,9 +15,8 @@ import valgrind
 import i18n
 import exporter
 
-__doc__ = i18n.HELP_en
-_ = i18n.translate
 
+_ = i18n.translate
 _DEFAULT_LOG_FILE = os.path.expanduser("~/.pvcheck.log")
 
 
@@ -52,7 +50,7 @@ def parse_options():
     args = argparser.parse_args()
 
     verbosity = args.verbosity
-    if verbosity < 0 or verbosity > 4:
+    if verbosity < 0 or verbosity > 4:  # no checks are made in argparse to allow error's translation.
         print(_("Invalid parameter ('%d')") % verbosity)
         sys.exit(2)
 
