@@ -55,37 +55,52 @@ def parse_options():
                 maxerrors=maxerrors, color=color, valgrind=valgrind,
                 format=format, logfile=logfile, list=list, run=run, export=export)
 
-    return (args, opts)
+    return args, opts
 
 
 def _initialized_argparser():
     argparser = ArgParser(description=_("Run tests to verify the correctness of a program."))
 
-    argparser.add_argument("-c", "--config", help=_("uses the specified configuration file."), nargs='?', const='',
-                           default='')
-    argparser.add_argument("-t", "--timeout", help=_("set how many seconds it should be waited for the termination of "
-                           "the program.  The default is 10 seconds."), nargs='?', const=10, default=10, type=float)
-    argparser.add_argument("-v", "--verbosity", help=_("set the verbosity level, where the level must be an integer "
-                           "between 0 (minimum) and 4 (maximum). The default value is 3."), nargs='?', const=3,
-                           default=3, type=int, choices=range(0, 4))
-    argparser.add_argument("-m", "--max_errors", help=_("reports up to N errors per section (default 4)."), nargs='?',
-                           const=4, default=4, type=int)
-    argparser.add_argument("-C", "--color", help=_("enable or disable colored output (default AUTO)."), nargs='?',
-                           const='AUTO', default='AUTO', choices=('YES', 'NO'))
-    argparser.add_argument("-V", "--valgrind", help=_("use Valgrind (if installed) to check memory usage."),
-                           action='store_true')
-    argparser.add_argument("-f", "--format", help=_("select the output type."), nargs='?', const='resume',
-                           default='resume', choices=('json', 'csv'))
-    argparser.add_argument("-l", "--log", help=_("specify the name of the file used for logging.  The default is "
-                           "~/.pvcheck.log."), nargs='?', const=_DEFAULT_LOG_FILE, default=_DEFAULT_LOG_FILE)
-    argparser.add_argument("-ls", "--list", help=_("list all the available tests."), action='store_true')
-    argparser.add_argument("-r", "--run", help=_("run only the selected test."), nargs="?", type=int)
-    argparser.add_argument("-e", "--export", help=_("export in a file the input arguments from the selected test."),
-                           nargs="?", type=int)
-    argparser.add_argument("test_file", help=_("file containing the tests to be performed (default pvcheck.test)."),
-                           default="pvcheck.test")
-    argparser.add_argument("program", help=_("program to be tested."))
-    argparser.add_argument("program_arguments", help=_("any arguments of the program to be tested."), nargs='*')
+    subparsers = argparser.add_subparsers(help=_('[test|other] --help for subcommand'))
+
+    # create the parser for the "test" command
+    parser_test = subparsers.add_parser('test', help=_('test a program.'))
+
+    parser_test.add_argument("-c", "--config", help=_("uses the specified configuration file."), nargs='?', const='',
+                             default='')
+    parser_test.add_argument("-t", "--timeout", help=_("set how many seconds it should be waited for the termination "
+                             "of the program.  The default is 10 seconds."), nargs='?', const=10, default=10,
+                             type=float)
+    parser_test.add_argument("-v", "--verbosity", help=_("set the verbosity level, where the level must be an integer "
+                             "between 0 (minimum) and 4 (maximum). The default value is 3."), nargs='?', const=3,
+                             default=3, type=int, choices=range(0, 4))
+    parser_test.add_argument("-m", "--max_errors", help=_("reports up to N errors per section (default 4)."), nargs='?',
+                             const=4, default=4, type=int)
+    parser_test.add_argument("-C", "--color", help=_("enable or disable colored output (default AUTO)."), nargs='?',
+                             const='AUTO', default='AUTO', choices=('YES', 'NO'))
+    parser_test.add_argument("-V", "--valgrind", help=_("use Valgrind (if installed) to check memory usage."),
+                             action='store_true')
+    parser_test.add_argument("-f", "--format", help=_("select the output type."), nargs='?', const='resume',
+                             default='resume', choices=('json', 'csv'))
+    parser_test.add_argument("-l", "--log", help=_("specify the name of the file used for logging.  The default is "
+                             "~/.pvcheck.log."), nargs='?', const=_DEFAULT_LOG_FILE, default=_DEFAULT_LOG_FILE)
+    parser_test.add_argument("-r", "--run", help=_("run only the selected test."), nargs="?", type=int)
+    parser_test.add_argument("test_file", help=_("file containing the tests to be performed (default pvcheck.test)."),
+                             default="pvcheck.test")
+    parser_test.add_argument("program", help=_("program to be tested."))
+    parser_test.add_argument("program_arguments", help=_("any arguments of the program to be tested."), nargs='*')
+    parser_test.set_defaults(export=None, list=False)
+
+    # create the parser for the "other" command
+    parser_other = subparsers.add_parser(_('other'), help=_('other functionality.'))
+    exclusive_other = parser_other.add_mutually_exclusive_group()
+    exclusive_other.add_argument("-e", "--export", help=_("export in a file the input arguments from the selected "
+                                 "test."), nargs="?", type=int)
+    exclusive_other.add_argument("-ls", "--list", help=_("list all the available tests."), action='store_true')
+    parser_other.add_argument("test_file", help=_("file containing the tests to be performed (default pvcheck.test)."),
+                              default="pvcheck.test")
+    parser_other.set_defaults(config='', timeout=10, verbosity=3, max_errors=4, color='AUTO', valgrind=False,
+                              format='resume', log=_DEFAULT_LOG_FILE, run=None, program=None, program_arguments=None)
 
     return argparser
 
