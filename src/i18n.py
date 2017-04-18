@@ -79,7 +79,7 @@ empty section $ sezione vuota
 extra section $ sezione extra
 Invalid parameter ('%s') $ Parametro non valido ('%s')
 Invalid parameter ('%d') $ Parametro non valido('%d')
-"Invalid parameter ('%f') $ Parametro non valido('%f')
+Invalid parameter ('%f') $ Parametro non valido('%f')
 TIMEOUT EXPIRED: PROCESS TERMINATED $ TEMPO LIMITE SCADUTO: PROCESSO TERMINATO
 PROCESS ENDED WITH A FAILURE $ PROCESSO TERMINATO CON UN FALLIMENTO
 (SEGMENTATION FAULT) $ (SEGMENTATION FAULT)
@@ -102,6 +102,27 @@ Error: Can't export test number %d. $ Errore: Impossibile esportare il test nume
 file containing the tests to be performed (default pvcheck.test). $ file contenente i test da eseguire (default pvcheck.test).
 program to be tested. $ programma da testare.
 any arguments of the program to be tested. $ eventuali argomenti del programma da testare.
+
+positional arguments $ argomenti posizionali
+optional arguments $ argomenti opzionali
+show this help message and exit $ mostra questo messaggio ed esce.
+show program's version number and exit $ mostra la versione del programma ed esce.
+unrecognized arguments: %s' $ argomento %s non riconosciuto
+not allowed with argument %s $ l'argomento %s non é consentito
+ignored explicit argument %r $ ignorato l'argomento esplicito %r
+too few arguments $ troppi pochi argomenti 
+argument %s is required $ é necessario l'argomento %s
+one of the arguments %s is required $ é necessario uno dei seguenti argomenti %s
+expected one argument $ atteso un argomento
+expected at most one argument $ atteso al piú un argomento
+expected at least one argument $ atteso almeno un argomento
+expected %s argument(s) $ atteso argomento %s
+ambiguous option: %s could match %s $ opzione ambigua: %s puó coincidere con %s
+unexpected option string: %s $ opzione string non attesa: %s
+%r is not callable $ %r non é chiamabile
+invalid %s value: %r $ non valido %s valore: %r
+invalid choice: %r (choose from %s) $ scelta non valida: %r (i parametri disponibili sono %s)
+%s: error: %s $ %s: errore: %s
 """
 
 _translations = {
