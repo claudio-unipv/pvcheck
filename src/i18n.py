@@ -88,6 +88,19 @@ _missing_translation = set()
 _lang = 'en'
 
 _it_strings = """
+Run tests to verify the correctness of a program. $ Esegue dei test per verificare la correttezza di un programma.
+set the verbosity level, where the level must be an integer between 0 (minimum) and 4 (maximum). The default value is 3. $ imposto il livello di verbosità.  Il livello deve essere un valore intero tra 0 (minimo) e 3 (massimo).  Il default è 2.
+set how many seconds it should be waited for the termination of the program.  The default is 10 seconds. $ imposta per quanti secondi bisogna attendere la terminazione del programma.  Il default è pari a 10 secondi.
+reports up to N errors per section (default 4). $ riporta fino ad un massimo di N errori per sezione (default 4).
+uses the specified configuration file. $ utilizza il file di configurazione specificato.
+enable or disable colored output (default AUTO). $ abilita o disabilita l'output colorato (default AUTO).
+use Valgrind (if installed) to check memory usage. $ utilizza Valgrind (se installato) per controllare l'utilizzo della memoria.
+select the output type. $ seleziona il tipo di output.
+specify the name of the file used for logging.  The default is ~/.pvcheck.log. $ specifica il nome del file usato per il logging. Il default è ~/.pvcheck.log.
+print this message and exit. $ stampa questo messaggio ed esce.
+list all the available tests. $ mostra tutti i test disponibili.
+run only the selected test. $ esegue solo il test indicato.
+export in a file the input arguments from the selected test. $ salva in un file gli argomenti di input dal test indicato.
 ERROR $ ERRORE
 OK $ OK
 WARNING! $ ATTENZIONE!
@@ -131,7 +144,7 @@ TOTAL $ TOTALE
 Test number %d doesn't exist. $ Il test numero %d non esiste.
 Use 'list' to list all the available tests. $ Utilizza 'list' per vedere tutti i test disponibili.
 Usage: list testfile $ Utilizzo: list fileditest
-Usage: N run testfile executable $ Utilizzo: N run fileditest eseguibile
+"Usage: N run[or export] testfile executable" $ Utilizzo: N run fileditest eseguibile
 Error: Can't export test number %d. $ Errore: Impossibile esportare il test numero %d.
 """
 

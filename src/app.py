@@ -2,6 +2,7 @@
 
 import sys
 import getopt
+import argparse
 import os
 import math
 import pvcheck
@@ -23,72 +24,75 @@ _DEFAULT_LOG_FILE = os.path.expanduser("~/.pvcheck.log")
 
 def parse_options():
     """Parse the command line."""
+    argparser = argparse.ArgumentParser(description=_("Run tests to verify the correctness of a program."), add_help=False)
+    argparser.add_argument("-h", "--help", help=_("print this message and exit."), action='help')
+    argparser.add_argument("-c", "--config", help=_("uses the specified configuration file."), nargs='?', const='',
+                           default='')
+    argparser.add_argument("-t", "--timeout", help=_("set how many seconds it should be waited for the termination of the program.  The default is 10 seconds."),
+                           nargs='?', const='10', default='10', type=float)
+    argparser.add_argument("-v", "--verbosity", help=_("set the verbosity level, where the level must be an integer between 0 (minimum) and 4 (maximum). The default value is 3."),
+                           nargs='?', const='3', default='3', type=int)
+    argparser.add_argument("-m", "--max_errors", help=_("reports up to N errors per section (default 4)."), nargs='?',
+                           const='4', default='4', type=int)
+    argparser.add_argument("-C", "--color", help=_("enable or disable colored output (default AUTO)."), nargs='?',
+                           const='AUTO', default='AUTO')
+    argparser.add_argument("-V", "--valgrind", help=_("use Valgrind (if installed) to check memory usage."),
+                           action='store_true')
+    argparser.add_argument("-f", "--format", help=_("select the output type."), nargs='?', const='resume',
+                           default='resume')
+    argparser.add_argument("-l", "--log", help=_("specify the name of the file used for logging.  The default is ~/.pvcheck.log."),
+                           nargs='?', const=_DEFAULT_LOG_FILE, default=_DEFAULT_LOG_FILE)
+    argparser.add_argument("-ls", "--list", help=_("list all the available tests."), action='store_true')
+    argparser.add_argument("-r", "--run", help=_("run only the selected test."), nargs="?", type=int)
+    argparser.add_argument("-e", "--export", help=_("export in a file the input arguments from the selected test."),
+                           nargs="?", type=int)
+    argparser.add_argument("test_file", help="file contenente i test da eseguire")
+    argparser.add_argument("program", help="programma da testare [seguito da argomenti].", nargs='*')
 
-    shortopts = "hc:t:v:m:C:Vo:l:"
-    longopts = ["help", "config=", "timeout=", "verbosity=",
-                "max-errors=", "color=", "valgrind", "format=", "log="]
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
-    except getopt.GetoptError as err:
-        print(str(err))
-        print(_(i18n.USAGE_en))
-        sys.exit(2)
-    opts = dict(opts)
+    args = argparser.parse_args()
 
-    if '-h' in opts or '--help' in opts:
-        print(_(i18n.USAGE_en))
-        print()
-        print(_(i18n.HELP_en))
-        sys.exit(0)
-
-    if len(args) < 2:
-        print(_(i18n.USAGE_en))
-        sys.exit(2)
-
-    def optval(key1, key2, default=None, result_type=None):
-        x = opts.get(key1, opts.get(key2, default))
-        if result_type is None:
-            return x
-        try:
-            return result_type(x)
-        except ValueError:
-            print(_("Invalid parameter ('%s')") % x)
-            sys.exit(2)
-
-    verbosity = optval('-v', '--verbosity', '3', int)
+    verbosity = args.verbosity
     if verbosity < 0 or verbosity > 4:
         print(_("Invalid parameter ('%d')") % verbosity)
         sys.exit(2)
 
-    timeout = optval('-t', '--timeout', '10', float)
+    timeout = args.timeout
     if timeout < 0:
         print(_("Invalid parameter ('%f')") % timeout)
         sys.exit(2)
 
-    maxerrors = optval('-m', '--max-errors', '4', int)
+    maxerrors = args.max_errors
     if maxerrors < 1:
         print(_("Invalid parameter ('%d')") % maxerrors)
         sys.exit(2)
 
-    config = optval('-c', '--config', '', str)
+    config = args.config
 
-    color = optval('-C', '--color', 'AUTO', str).upper()
+    color = args.color
     if color not in ("YES", "NO", "AUTO"):
         print(_("Invalid parameter ('%s')") % color)
         sys.exit(2)
     color = (color == "YES" or (color == "AUTO" and sys.stdout.isatty()))
 
-    format = optval('-f', '--format', 'resume', str)
+    format = args.format
     if format not in ("resume", "json", "csv"):
         print(_("Invalid parameter ('%s')") % format)
         sys.exit(2)
 
-    logfile = optval('-l', '--log', _DEFAULT_LOG_FILE, str)
+    logfile = args.log
         
-    valgrind = (True if '-V' in opts or '--valgrind' in opts else False)
+    valgrind = args.valgrind
+    test_file = args.test_file
+    program = args.program
+    run = args.run
+    export = args.export
+    list = args.list
+
+    args = dict(test_file=test_file, program=program,
+                list=list)
     opts = dict(config=config, verbosity=verbosity, timeout=timeout,
                 maxerrors=maxerrors, color=color, valgrind=valgrind,
-                format=format, logfile=logfile)
+                format=format, logfile=logfile, list=list, run=run, export=export)
 
     return (args, opts)
 
@@ -147,22 +151,13 @@ def main():
 
     cfg = parse_file(opts["config"])
 
-    if args[0] in ("list", "ls"):
-        if len(args) != 2:
-            print(_("Usage: list testfile"))
-            exit(1)
-        td = parse_file(args[1])
+    if args["list"]:
+        td = parse_file(args["test_file"])
         suite = testdata.TestSuite(cfg + td)
         print_test_names_list(suite)
         exit(0)
 
-    try:
-        single_test_index, td = initialize_single_test(args)
-        if args[1] not in ('run', 'export'):
-            print(_("Usage: N run[or export] testfile executable"))
-            exit(1)
-    except ValueError:
-        td = parse_file(args[0])
+    td = parse_file(args["test_file"])
 
     if opts['valgrind']:
         cfg.append(testdata.Section('VALGRIND', []))
@@ -172,7 +167,7 @@ def main():
     if single_test_index is not None:
         suite = suite.test_case(single_test_index)
 
-    if args[1] == 'export':
+    if opts['export']:
         exporter.export(suite, single_test_index)
 
     execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
@@ -192,15 +187,16 @@ def main():
     # Pvcheck returns as exit code the number of failed tests.
     # 255 represents a generic error.
     retcode = 255
+    args = args['program']
     with open(opts["logfile"], "at") as logfile:
         logfmt = jsonformatter.JSONFormatter(logfile)
         combfmt = formatter.CombinedFormatter([fmt, logfmt])
         pvc = pvcheck.PvCheck(exe, combfmt)
         if single_test_index is None:
-            failures = pvc.exec_suite(suite, args[1:],
+            failures = pvc.exec_suite(suite, args,
                                       timeout=opts["timeout"])
         else:
-            failures = pvc.exec_single_test(suite, args[3:],
+            failures = pvc.exec_single_test(suite, args,
                                             timeout=opts["timeout"])
 
         retcode = min(failures, 254)
