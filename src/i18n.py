@@ -99,7 +99,7 @@ Use 'list' to list all the available tests. $ Utilizza 'list' per vedere tutti i
 Usage: list testfile $ Utilizzo: list fileditest
 "Usage: N run[or export] testfile executable" $ Utilizzo: N run fileditest eseguibile
 Error: Can't export test number %d. $ Errore: Impossibile esportare il test numero %d.
-file containing the tests to be performed. $ file contenente i test da eseguire.
+file containing the tests to be performed (default pvcheck.test). $ file contenente i test da eseguire (default pvcheck.test).
 program to be tested. $ programma da testare.
 any arguments of the program to be tested. $ eventuali argomenti del programma da testare.
 """
