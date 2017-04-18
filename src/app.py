@@ -45,7 +45,8 @@ def parse_options():
     argparser.add_argument("-e", "--export", help=_("export in a file the input arguments from the selected test."),
                            nargs="?", type=int)
     argparser.add_argument("test_file", help="file contenente i test da eseguire")
-    argparser.add_argument("program", help="programma da testare [seguito da argomenti].", nargs='*')
+    argparser.add_argument("program", help="programma da testare")
+    argparser.add_argument("program_arguments", help="argomenti del programma da testare", nargs='*')
 
     args = argparser.parse_args()
 
@@ -82,12 +83,13 @@ def parse_options():
     valgrind = args.valgrind
     test_file = args.test_file
     program = args.program
+    program_arguments = args.program_arguments
     run = args.run
     export = args.export
     list = args.list
 
-    args = dict(test_file=test_file, program=program,
-                list=list)
+    args = dict(test_file=test_file, program=program, program_arguments=program_arguments
+                )
     opts = dict(config=config, verbosity=verbosity, timeout=timeout,
                 maxerrors=maxerrors, color=color, valgrind=valgrind,
                 format=format, logfile=logfile, list=list, run=run, export=export)
@@ -149,7 +151,7 @@ def main():
 
     cfg = parse_file(opts["config"])
 
-    if args["list"]:
+    if opts["list"]:
         td = parse_file(args["test_file"])
         suite = testdata.TestSuite(cfg + td)
         print_test_names_list(suite)
@@ -185,16 +187,19 @@ def main():
     # Pvcheck returns as exit code the number of failed tests.
     # 255 represents a generic error.
     retcode = 255
-    args = args['program']
+    program = [args['program']]
+    if args['program_arguments'] is not None:
+        program.extend(args['program_arguments'])
+
     with open(opts["logfile"], "at") as logfile:
         logfmt = jsonformatter.JSONFormatter(logfile)
         combfmt = formatter.CombinedFormatter([fmt, logfmt])
         pvc = pvcheck.PvCheck(exe, combfmt)
         if single_test_index is None:
-            failures = pvc.exec_suite(suite, args,
+            failures = pvc.exec_suite(suite, program,
                                       timeout=opts["timeout"])
         else:
-            failures = pvc.exec_single_test(suite, args,
+            failures = pvc.exec_single_test(suite, program,
                                             timeout=opts["timeout"])
 
         retcode = min(failures, 254)
