@@ -44,9 +44,9 @@ def parse_options():
     argparser.add_argument("-r", "--run", help=_("run only the selected test."), nargs="?", type=int)
     argparser.add_argument("-e", "--export", help=_("export in a file the input arguments from the selected test."),
                            nargs="?", type=int)
-    argparser.add_argument("test_file", help="file contenente i test da eseguire")
-    argparser.add_argument("program", help="programma da testare")
-    argparser.add_argument("program_arguments", help="argomenti del programma da testare", nargs='*')
+    argparser.add_argument("test_file", help=_("file containing the tests to be performed."))
+    argparser.add_argument("program", help=_("program to be tested."))
+    argparser.add_argument("program_arguments", help="any arguments of the program to be tested.", nargs='*')
 
     args = argparser.parse_args()
 
