@@ -36,7 +36,7 @@ def parse_options():
     run = args.run
     export = args.export
     list = args.list
-    test_file = args.test_file
+    test_file = args.file
     program = args.program
     program_arguments = args.program_arguments
 
@@ -61,7 +61,7 @@ def parse_options():
 def _initialized_argparser():
     argparser = ArgParser(description=_("Run tests to verify the correctness of a program."))
 
-    subparsers = argparser.add_subparsers(help=_('[test|other] --help for subcommand'))
+    subparsers = argparser.add_subparsers(help=_('[test|test_info] --help for subcommand'))
 
     # create the parser for the "test" command
     parser_test = subparsers.add_parser('test', help=_('test a program.'))
@@ -76,30 +76,37 @@ def _initialized_argparser():
                              default=3, type=int, choices=range(0, 4))
     parser_test.add_argument("-m", "--max_errors", help=_("reports up to N errors per section (default 4)."), nargs='?',
                              const=4, default=4, type=int)
-    parser_test.add_argument("-C", "--color", help=_("enable or disable colored output (default AUTO)."), nargs='?',
-                             const='AUTO', default='AUTO', choices=('YES', 'NO'))
     parser_test.add_argument("-V", "--valgrind", help=_("use Valgrind (if installed) to check memory usage."),
                              action='store_true')
-    parser_test.add_argument("-f", "--format", help=_("select the output type."), nargs='?', const='resume',
-                             default='resume', choices=('json', 'csv'))
     parser_test.add_argument("-l", "--log", help=_("specify the name of the file used for logging.  The default is "
                              "~/.pvcheck.log."), nargs='?', const=_DEFAULT_LOG_FILE, default=_DEFAULT_LOG_FILE)
     parser_test.add_argument("-r", "--run", help=_("run only the selected test."), nargs="?", type=int)
-    parser_test.add_argument("test_file", help=_("file containing the tests to be performed (default pvcheck.test)."),
-                             default="pvcheck.test")
+    parser_test.add_argument("-f", "--file", help=_("file containing the tests to be performed (default pvcheck.test).")
+                             , default="pvcheck.test")
+
+    exclusive_test = parser_test.add_mutually_exclusive_group()
+
+    exclusive_test.add_argument("-F", "--format", help=_("select the output type."), nargs='?', const='resume',
+                                default='resume', choices=('json', 'csv'))
+    exclusive_test.add_argument("-C", "--color", help=_("enable or disable colored output (default AUTO)."), nargs='?',
+                                const='AUTO', default='AUTO', choices=('YES', 'NO'))
+
     parser_test.add_argument("program", help=_("program to be tested."))
     parser_test.add_argument("program_arguments", help=_("any arguments of the program to be tested."), nargs='*')
+
     parser_test.set_defaults(export=None, list=False)
 
-    # create the parser for the "other" command
-    parser_other = subparsers.add_parser(_('other'), help=_('other functionality.'))
-    exclusive_other = parser_other.add_mutually_exclusive_group()
-    exclusive_other.add_argument("-e", "--export", help=_("export in a file the input arguments from the selected "
-                                 "test."), nargs="?", type=int)
-    exclusive_other.add_argument("-ls", "--list", help=_("list all the available tests."), action='store_true')
-    parser_other.add_argument("test_file", help=_("file containing the tests to be performed (default pvcheck.test)."),
-                              default="pvcheck.test")
-    parser_other.set_defaults(config='', timeout=10, verbosity=3, max_errors=4, color='AUTO', valgrind=False,
+    # create the parser for the "test_info" command
+    parser_test_info = subparsers.add_parser('test_info', help=_('get information about a test file.'))
+    exclusive_test_info = parser_test_info.add_mutually_exclusive_group(required=True)
+
+    exclusive_test_info.add_argument("-e", "--export", help=_("export in a file the input arguments from the selected "
+                                     "test."), nargs="?", type=int)
+    exclusive_test_info.add_argument("-ls", "--list", help=_("list all the available tests."), action='store_true')
+
+    parser_test_info.add_argument("-f", "--file", help=_("file containing the tests to be performed "
+                                  "(default pvcheck.test)."), default="pvcheck.test")
+    parser_test_info.set_defaults(config='', timeout=10, verbosity=3, max_errors=4, color='AUTO', valgrind=False,
                               format='resume', log=_DEFAULT_LOG_FILE, run=None, program=None, program_arguments=None)
 
     return argparser

@@ -102,10 +102,9 @@ Error: Can't export test number %d. $ Errore: Impossibile esportare il test nume
 file containing the tests to be performed (default pvcheck.test). $ file contenente i test da eseguire (default pvcheck.test).
 program to be tested. $ programma da testare.
 any arguments of the program to be tested. $ eventuali argomenti del programma da testare.
-[test|other] --help for subcommand $ [test|altro] --help per i sottocomandi
-other $ altro
+[test|test_info] --help for subcommand $ [test|test_info] --help per i sottocomandi
 test a program. $ testa un programma.
-other functionality. $ altre funzionalitá.
+get information about a test file. $ ottieni informazioni riguardanti un file di test.
 
 positional arguments $ argomenti obbligatori
 optional arguments $ argomenti opzionali
