@@ -1,0 +1,81 @@
+Examples
+
+	# Show pvcheck help message
+	$ ./pvcheck --help
+
+	# Show test subcommand help message
+	$ ./pvcheck test --help
+
+	# Show test_info subcommand help message
+	$ ./pvcheck test_info --help
+
+	----------test subcommand----------
+
+	# Test a program using a test file named "pvcheck.test" placed  
+	# in the current directory.
+	$ ./pvcheck test ./program [program_arguments]
+
+	# Test a program using the specified test file.
+	$ ./pvcheck test --file file.test ./program [program_arguments] 
+
+	# Test a program using a single test of a test file.
+	# (N is the test number) 
+	$ ./pvcheck test --run N ./program [program_arguments]
+
+	# Test a program obtaining the selected output format.
+	# (Possible choices: json, csv)
+	# (Not compatible with --color)
+	$ ./pvcheck test --format json ./program [program_arguments]
+
+	# Test a program setting how many seconds it should be waited for 
+	# the termination of the program. The default is 10 seconds.
+	$ ./pvcheck test --timeout N ./program [program_arguments]
+
+	# Test a program setting reports up to N errors per section. The default 
+	# value is 4.
+	$ ./pvcheck test --max_errors N ./program [program_arguments]
+
+	# Test a program enabling or disabling colored output.
+	# (Possible choices YES, NO)
+	# (Not compatible with --format)
+	$ ./pvcheck test --color NO ./program [program_arguments]
+
+	# Test a program setting the verbosity level. The default value is 3.
+	# (the level must be an integer between 0 (minimum) and 4 (maximum))
+	$ ./pvcheck test --verbosity N ./program [program_arguments]
+
+	# Test a program using Valgrind (if installed) to check memory usage.
+	$ ./pvcheck test --valgrind ./program [program_arguments]
+
+	# Test a program specifying the name of the file used for logging.
+	$ ./pvcheck test --log file.log ./program [program_arguments]
+
+	# Test a program using the specified configuation file.
+	$ ./pvcheck test --config file.config ./program [program_arguments]
+	
+	----------test_info subcommand----------
+
+	# List all the available test in a test file named "pvcheck.test" placed
+	# in the current directory.
+	$ pvcheck test_info --list
+
+	# List all the available test in the specified test file
+	$ pvcheck test_info --list --file file.test
+
+	# export in a file the input arguments from the selected test contained
+	# in a test file named "pvcheck.test" placed in the current directory.
+	# (N is the test number)
+	$ pvcheck test_info --export N
+
+	# export in a file the input arguments from the selected test contained
+	# in the specified test file.
+	# (N is the test number)
+	$ pvcheck test_info --export N --file file.test
+	
+	# --list and --export are not compatible.
+	
+	
+	
+
+	
+	
