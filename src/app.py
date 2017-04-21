@@ -92,7 +92,7 @@ def _initialized_argparser():
     exclusive_run.add_argument("-F", "--format", help=_("select the output type."), nargs='?', const='resume',
                                default='resume', choices=('json', 'csv'))
     exclusive_run.add_argument("-C", "--color", help=_("enable or disable colored output (default AUTO)."), nargs='?',
-                               const='AUTO', default='AUTO', choices=('YES', 'NO'))
+                               const='AUTO', default='AUTO', choices=('YES', 'NO', 'AUTO'))
 
     parser_run.set_defaults(test_number=None, info=False)
 
