@@ -95,21 +95,18 @@ errors $ errori
 CODE $ CODICE
 TOTAL $ TOTALE
 Test number %d doesn't exist. $ Il test numero %d non esiste.
-Use 'list' to list all the available tests. $ Utilizza 'list' per vedere tutti i test disponibili.
-Usage: list testfile $ Utilizzo: list fileditest
-"Usage: N run[or export] testfile executable" $ Utilizzo: N run fileditest eseguibile
+Use './pvcheck info' to list all the available tests. $ Utilizza './pvcheck info' per vedere tutti i test disponibili.
 Error: Can't export test number %d. $ Errore: Impossibile esportare il test numero %d.
 file containing the tests to be performed (default pvcheck.test). $ file contenente i test da eseguire (default pvcheck.test).
 program to be tested. $ programma da testare.
 any arguments of the program to be tested. $ eventuali argomenti del programma da testare.
-[test|test_info] --help for subcommand $ [test|test_info] --help per i sottocomandi
+[run|info|export] --help for command help $ [run|info|export] --help per l'help di un comando
 test a program. $ testa un programma.
-get information about a test file. $ ottieni informazioni riguardanti un file di test.
 
-positional arguments $ argomenti obbligatori
+positional arguments $ argomenti posizionali
 optional arguments $ argomenti opzionali
-show this help message and exit $ mostra questo messaggio ed esce.
-show program's version number and exit $ mostra la versione del programma ed esce.
+show this help message and exit $ mostra questo messaggio ed esce
+show program's version number and exit $ mostra la versione del programma ed esce
 unrecognized arguments: %s' $ argomento %s non riconosciuto
 not allowed with argument %s $ l'argomento %s non é consentito
 ignored explicit argument %r $ ignorato l'argomento esplicito %r
@@ -126,6 +123,7 @@ unexpected option string: %s $ opzione string non attesa: %s
 invalid %s value: %r $ non valido %s valore: %r
 invalid choice: %r (choose from %s) $ scelta non valida: %r (i parametri disponibili sono %s)
 %s: error: %s $ %s: errore: %s
+unrecognized arguments: %s $ argomento non riconosciuto: %s
 """
 
 _translations = {

@@ -123,7 +123,7 @@ class TestSuite:
             fmt = _("Test number %d doesn't exist.")
             msg = fmt % (test_number + 1)
             print("\n" + msg + "\n")
-            print(_("Use 'list' to list all the available tests.") + "\n")
+            print(_("Use './pvcheck info' to list all the available tests.") + "\n")
             exit(2)
         return test_case
 
