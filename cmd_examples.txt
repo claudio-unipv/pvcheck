@@ -4,7 +4,7 @@ Examples
 	$ ./pvcheck --help
 
 	# Show test subcommand help message
-	$ ./pvcheck test --help
+	$ ./pvcheck run --help
 
 	# Show info subcommand help message
 	$ ./pvcheck info --help
@@ -12,7 +12,7 @@ Examples
 	# Show export subcommand help message
 	$ ./pvcheck export --help
 
-	---------- run command----------
+	---------- run subcommand ----------
 
 	# Test a program using a test file named "pvcheck.test" placed  
 	# in the current directory.
@@ -25,40 +25,48 @@ Examples
 	# Test a program using a single test of a test file.
 	# (N is the test number) 
 	$ ./pvcheck run --test N ./program [program_arguments]
-	$ ./pvcheck run -t N ./program [program_arguments]
+	$ ./pvcheck run -T N ./program [program_arguments]
 
 	# Test a program obtaining the selected output format.
 	# (Possible choices: json, csv)
 	# (Not compatible with --color)
 	$ ./pvcheck run --format json ./program [program_arguments]
+	$ ./pvcheck run --F json ./program [program_arguments]
 
 	# Test a program setting how many seconds it should be waited for 
 	# the termination of the program. The default is 10 seconds.
 	$ ./pvcheck run --timeout N ./program [program_arguments]
+	$ ./pvcheck run -t N ./program [program_arguments]
 
 	# Test a program setting reports up to N errors per section. The default 
 	# value is 4.
 	$ ./pvcheck run --errors N ./program [program_arguments]
+	$ ./pvcheck run -e N ./program [program_arguments]
 
 	# Test a program enabling or disabling colored output.
 	# (Possible choices YES, NO)
 	# (Not compatible with --format)
 	$ ./pvcheck run --color NO ./program [program_arguments]
+	$ ./pvcheck run -C NO ./program [program_arguments]
 
 	# Test a program setting the verbosity level. The default value is 3.
 	# (the level must be an integer between 0 (minimum) and 4 (maximum))
 	$ ./pvcheck run --verbosity N ./program [program_arguments]
+	$ ./pvcheck run -v N ./program [program_arguments]
 
 	# Test a program using Valgrind (if installed) to check memory usage.
 	$ ./pvcheck run --valgrind ./program [program_arguments]
+	$ ./pvcheck run -V ./program [program_arguments]
 
 	# Test a program specifying the name of the file used for logging.
 	$ ./pvcheck run --log file.log ./program [program_arguments]
+	$ ./pvcheck run -l file.log ./program [program_arguments]
 
 	# Test a program using the specified configuation file.
 	$ ./pvcheck run --config file.config ./program [program_arguments]
+	$ ./pvcheck run -c file.config ./program [program_arguments]
 	
-	---------- info subcommand----------
+	---------- info subcommand ----------
 
 	# List all the available test in a test file named "pvcheck.test" placed
 	# in the current directory.
@@ -68,7 +76,7 @@ Examples
 	$ pvcheck info --file file.test
 	$ pvcheck info -f file.test
 
-	---------- export command----------
+	---------- export subcommand ----------
 
 	# export in a file the input arguments from the selected test contained
 	# in a test file named "pvcheck.test" placed in the current directory.
@@ -80,11 +88,4 @@ Examples
 	# (N is the test number)
 	$ pvcheck export N --file file.test
 	$ pvcheck export N -f file.test
-	
-	# --list and --export are not compatible.
-	
-	
-	
-
-	
 	
