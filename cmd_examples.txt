@@ -3,7 +3,7 @@ Examples
 	# Show pvcheck help message
 	$ ./pvcheck --help
 
-	# Show test subcommand help message
+	# Show run subcommand help message
 	$ ./pvcheck run --help
 
 	# Show info subcommand help message
