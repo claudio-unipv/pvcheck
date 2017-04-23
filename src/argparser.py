@@ -2,6 +2,7 @@
 
 import argparse
 import i18n
+import sys
 _ = i18n.translate
 
 
@@ -25,6 +26,7 @@ class ArgParser(argparse.ArgumentParser):
                  conflict_handler='error',
                  add_help=True):
         object.__init__(self)
+        self.set_default_subparser
         if version is not None:
             import warnings
             warnings.warn(
@@ -82,6 +84,32 @@ class ArgParser(argparse.ArgumentParser):
                 pass
             else:
                 self._defaults.update(defaults)
+
+    def set_default_subparser(self, name, args=None):
+        """
+        Default subparser selection. Call after setup, just before parse_args().
+    
+        name: is the name of the subparser to call by default
+        args: if set is the argument list handed to parse_args()
+        """
+        subparser_found = False
+        for arg in sys.argv[1:]:
+            if arg in ['-h', '--help']:  # global help if no subparser
+                break
+        else:
+            for x in self._subparsers._actions:
+                if not isinstance(x, argparse._SubParsersAction):
+                    continue
+                for sp_name in x._name_parser_map.keys():
+                    if sp_name in sys.argv[1:]:
+                        subparser_found = True
+            if not subparser_found:
+                # insert default in first position, this implies no
+                # global options without a sub_parsers specified
+                if args is None:
+                    sys.argv.insert(1, name)
+                else:
+                    args.insert(0, name)
 
     # =====================================
     # Command line argument parsing methods

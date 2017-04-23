@@ -19,10 +19,10 @@ import exporter
 _ = i18n.translate
 _DEFAULT_LOG_FILE = os.path.expanduser("~/.pvcheck.log")
 
-
 def parse_options():
     """Parse the command line."""
     argparser = _initialized_argparser()
+    argparser.set_default_subparser("run")
     args = argparser.parse_args()
 
     verbosity = args.verbosity
