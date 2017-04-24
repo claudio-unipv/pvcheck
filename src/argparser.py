@@ -87,7 +87,7 @@ class ArgParser(argparse.ArgumentParser):
 
     def set_default_subparser(self, name, args=None):
         """
-        Default subparser selection. Call after setup, just before parse_args().
+        Default subparser selection.
     
         name: is the name of the subparser to call by default
         args: if set is the argument list handed to parse_args()
