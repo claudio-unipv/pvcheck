@@ -10,6 +10,7 @@ import testdata
 import formatter
 import jsonformatter
 import csvformatter
+import htmlformatter
 import executor
 import valgrind
 import i18n
@@ -91,7 +92,7 @@ def _initialized_argparser():
     exclusive_run = parser_run.add_mutually_exclusive_group()
 
     exclusive_run.add_argument("-F", "--format", help=_("select the output type."), nargs='?', const='resume',
-                               default='resume', choices=('json', 'csv'))
+                               default='resume', choices=('json', 'csv', 'html'))
     exclusive_run.add_argument("-C", "--color", help=_("enable or disable colored output (default AUTO)."), nargs='?',
                                const='AUTO', default='AUTO', choices=('YES', 'NO', 'AUTO'))
 
@@ -189,6 +190,8 @@ def main():
         fmt = jsonformatter.JSONFormatter(indent=4)
     elif opts["format"] == "csv":
         fmt = csvformatter.CSVFormatter()
+    elif opts["format"] == "html":
+        fmt = htmlformatter.HTMLFormatter()
     else:
         fmtclass = (formatter.ColoredTextFormatter if opts["color"]
                     else formatter.TextFormatter)
