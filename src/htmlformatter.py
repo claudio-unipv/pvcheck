@@ -13,7 +13,7 @@ class HTMLFormatter(JSONFormatter):
         <link href="minimal-table.css" rel="stylesheet" type="text/css">
     </head>
     <body>
-        <table>
+        <table align="center">
             <tr>""")
 
         header = self._header_builder()
@@ -24,14 +24,13 @@ class HTMLFormatter(JSONFormatter):
         print("            </tr>")
 
         i = 0
-        j = 0
         for test in self._tests:
             row = self._row_builder(test, header)
             print("            <tr>")
             if len(self._tests) > 1:
-                print('                <td><a href="#ref{}">{}</a></td>'.format(i, row[0]))
-                j = 1
-            for element in row[j:]:
+                print('                <td><a href="#{}">{}</a></td>'.format(row[0], row[0]))
+                i = 1
+            for element in row[i:]:
                 if element == "ok":
                     color = "green"
                 elif element == "error":
@@ -42,7 +41,6 @@ class HTMLFormatter(JSONFormatter):
                     color = "black"
                 print('                <td><font color="{}">{}</font></td>'.format(color, element))
             print("            </tr>")
-            i += 1
         print("        </table>")
         print("    </body>")
         print('</html>')
