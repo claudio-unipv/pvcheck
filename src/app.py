@@ -62,7 +62,7 @@ def parse_options():
 def _initialized_argparser():
     argparser = ArgParser(description=_("Run tests to verify the correctness of a program."))
 
-    subparsers = argparser.add_subparsers(help=_('[run|info|export] --help for command help'))
+    subparsers = argparser.add_subparsers(help=_('[run|info|export] --help for command help (default=run)'))
 
     # create the parser for the "run" command
     parser_run = subparsers.add_parser('run', help=_('test a program.'))

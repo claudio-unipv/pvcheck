@@ -101,7 +101,7 @@ file containing the tests to be performed (default pvcheck.test). $ file contene
 file containing the tests to be performed.$ file contenente i test da eseguire.
 program to be tested. $ programma da testare.
 any arguments of the program to be tested. $ eventuali argomenti del programma da testare.
-[run|info|export] --help for command help $ [run|info|export] --help per l'help di un comando
+[run|info|export] --help for command help (default=run) $ [run|info|export] --help per l'help di un comando (default=run)
 test a program. $ testa un programma.
 
 positional arguments $ argomenti posizionali
