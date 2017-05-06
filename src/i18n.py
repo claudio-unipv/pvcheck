@@ -98,6 +98,7 @@ Test number %d doesn't exist. $ Il test numero %d non esiste.
 Use './pvcheck info' to list all the available tests. $ Utilizza './pvcheck info' per vedere tutti i test disponibili.
 Error: Can't export test number %d. $ Errore: Impossibile esportare il test numero %d.
 file containing the tests to be performed (default pvcheck.test). $ file contenente i test da eseguire (default pvcheck.test).
+file containing the tests to be performed.$ file contenente i test da eseguire.
 program to be tested. $ programma da testare.
 any arguments of the program to be tested. $ eventuali argomenti del programma da testare.
 [run|info|export] --help for command help $ [run|info|export] --help per l'help di un comando

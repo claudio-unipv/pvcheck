@@ -100,8 +100,7 @@ def _initialized_argparser():
     # create the parser for the "info" command
     parser_info = subparsers.add_parser('info', help=_("list all the available tests."))
 
-    parser_info.add_argument("file", help=_("file containing the tests to be performed "
-                             "(default pvcheck.test)."), default="pvcheck.test")
+    parser_info.add_argument("file", help=_("file containing the tests to be performed."))
     parser_info.set_defaults(config='', timeout=10, verbosity=3, errors=4, color='AUTO', valgrind=False,
                              format='resume', log=_DEFAULT_LOG_FILE, test=None, program=None, program_arguments=None,
                              test_number=None, info=True)
@@ -110,8 +109,7 @@ def _initialized_argparser():
     parser_export = subparsers.add_parser('export', help=_("export in a file the input arguments from the selected "
                                           "test."))
     parser_export.add_argument("test_number", type=int)
-    parser_export.add_argument("file", help=_("file containing the tests to be performed "
-                               "(default pvcheck.test)."), default="pvcheck.test")
+    parser_export.add_argument("file", help=_("file containing the tests to be performed."))
     parser_export.set_defaults(config='', timeout=10, verbosity=3, errors=4, color='AUTO', valgrind=False,
                                format='resume', log=_DEFAULT_LOG_FILE, test=None, program=None, program_arguments=None,
                                info=False)
