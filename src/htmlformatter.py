@@ -90,14 +90,18 @@ class HTMLFormatter(JSONFormatter):
         print("            </tr>")
 
     def _print_tests_table_rows(self, tests_table_header):
-        i = 0
+        if len(self._tests) > 1:
+            print_test_name = True
+            first_element_index = 1
+        else:
+            print_test_name = False
+            first_element_index = 0
         for test in self._tests:
             row = self._test_table_row_builder(test, tests_table_header)
             print("            <tr>")
-            if len(self._tests) > 1:
+            if print_test_name:
                 print('                <td><a href="#{}">{}</a></td>'.format(row[0], row[0]))
-                i = 1
-            for element in row[i:]:
+            for element in row[first_element_index:]:
                 if element == "ok":
                     color = "green"
                 elif element == "error":
