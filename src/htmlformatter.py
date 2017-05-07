@@ -146,6 +146,13 @@ class HTMLFormatter(JSONFormatter):
         return row
 
     def print_tests_information(self):
+        if self._tests[0]["error_message"] != "ok":
+            print("        <hr>")
+            print("        <p><font color='red'>{}</font></p>".format(self._tests[0]["error_message"]))
+            print("        <hr>")
+            print("    </body>")
+            print('</html>')
+            exit(0)
         header = self._tests_table_header_builder()
         for test in self._tests:
             print("        <hr>")
