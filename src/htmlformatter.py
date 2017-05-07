@@ -1,13 +1,59 @@
 """Formatter producing HTML data"""
 from jsonformatter import JSONFormatter
 
+_trans_dic = {"\n": "<br>", "–": "&ndash;", "—": "&mdash;", "&": "&amp;", ">": "&gt;", "<": "&lt;"}
+_trantab = str.maketrans(_trans_dic)
+
 
 class HTMLFormatter(JSONFormatter):
-
     def end_session(self):
         self.initial_printing()
         self.print_tests_table()
-        print("        <hr>")
+
+        header = self._tests_table_header_builder()
+        for test in self._tests:
+            print("        <hr>")
+            if len(self._tests) > 1:
+                print('        <p><a name="{}"><b>Test:</b> {}</a><br>'.format(test["title"].translate(_trantab),
+                                                                        test["title"].translate(_trantab)))
+            command_line = ""
+            for element in test["command_line"]:
+                command_line += " " + element
+            print('           <b>Riga di comando:</b> {}<br>'.format(command_line.translate(_trantab)))
+            if len(test["input_text"]) > 0:
+                print('            <b>Input:</b> {}<br>'.format(test["input_text"].translate(_trantab)))
+            if test["input_file_name"] is not None:
+                if test["input_file_name"] == "<temp.file>":
+                    input_file_name = "File Temporaneo"
+                else:
+                    input_file_name = test["input_file_name"]
+
+                print('            <b>{}:</b><br> {}<br>'.format(input_file_name.translate(_trantab),
+                                                          test["file_text"].translate(_trantab)))
+            for section in header:
+                if section != "TEST":
+                    if test["sections"][section]["section status"] == "ok":
+                        msg = "OK"
+                        color = "green"
+                        print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
+                    elif test["sections"][section]["section status"] == "error":
+                        for wrong_line in test["sections"][section]['wrong_lines']:
+                            if wrong_line[2] is None:
+                                msg = "riga {} inattesa".format(wrong_line[0] + 1)
+                            elif wrong_line[1] is None:
+                                msg = "riga mancante (atteso '{}')".format(wrong_line[0] + 1, wrong_line[2])
+                            else:
+                                msg = "riga {} errata (atteso '{}', ottenuto '{}')".format(wrong_line[0] + 1, wrong_line[2],
+                                                                                           wrong_line[1])
+                            color = "red"
+                            print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
+                    else:
+                        msg = "missing section"
+                        color = "orange"
+                        print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
+
+            print('        </p>')
+
         print("    </body>")
         print('</html>')
 
@@ -86,7 +132,7 @@ class HTMLFormatter(JSONFormatter):
     @staticmethod
     def _print_tests_table_header(tests_table_header):
         for element in tests_table_header:
-            print("                <th>{}</th>".format(element))
+            print("                <th>{}</th>".format(element.translate(_trantab)))
         print("            </tr>")
 
     def _print_tests_table_rows(self, tests_table_header):
@@ -100,7 +146,8 @@ class HTMLFormatter(JSONFormatter):
             row = self._test_table_row_builder(test, tests_table_header)
             print("            <tr>")
             if print_test_name:
-                print('                <td><a href="#{}">{}</a></td>'.format(row[0], row[0]))
+                print('                <td><a href="#{}">{}</a></td>'.format(row[0].translate(_trantab),
+                                                                             row[0].translate(_trantab)))
             for element in row[first_element_index:]:
                 if element == "ok":
                     color = "green"
@@ -110,7 +157,7 @@ class HTMLFormatter(JSONFormatter):
                     color = "orange"
                 else:
                     color = "black"
-                print('                <td><font color="{}">{}</font></td>'.format(color, element))
+                print('                <td><font color="{}">{}</font></td>'.format(color, element.translate(_trantab)))
             print("            </tr>")
 
     def _test_table_row_builder(self, test, header):
