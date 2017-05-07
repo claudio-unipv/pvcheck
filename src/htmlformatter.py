@@ -1,59 +1,26 @@
 """Formatter producing HTML data"""
+
 from jsonformatter import JSONFormatter
 
 _trans_dic = {"\n": "<br>", "–": "&ndash;", "—": "&mdash;", "&": "&amp;", ">": "&gt;", "<": "&lt;"}
 _trantab = str.maketrans(_trans_dic)
 
+section_summary = {}
+total_summary = {"ok": 0, "warning": 0, "error": 0}
+
 
 class HTMLFormatter(JSONFormatter):
     def end_session(self):
-        self.initial_printing()
-        self.print_tests_table()
 
         header = self._tests_table_header_builder()
-        for test in self._tests:
-            print("        <hr>")
-            if len(self._tests) > 1:
-                print('        <p><a name="{}"><b>Test:</b> {}</a><br>'.format(test["title"].translate(_trantab),
-                                                                        test["title"].translate(_trantab)))
-            command_line = ""
-            for element in test["command_line"]:
-                command_line += " " + element
-            print('           <b>Riga di comando:</b> {}<br>'.format(command_line.translate(_trantab)))
-            if len(test["input_text"]) > 0:
-                print('            <b>Input:</b> {}<br>'.format(test["input_text"].translate(_trantab)))
-            if test["input_file_name"] is not None:
-                if test["input_file_name"] == "<temp.file>":
-                    input_file_name = "File Temporaneo"
-                else:
-                    input_file_name = test["input_file_name"]
+        for element in header:
+            if element != "TEST":
+                section_summary[element] = {"ok": 0, "warning": 0, "error": 0}
 
-                print('            <b>{}:</b><br> {}<br>'.format(input_file_name.translate(_trantab),
-                                                          test["file_text"].translate(_trantab)))
-            for section in header:
-                if section != "TEST":
-                    if test["sections"][section]["section status"] == "ok":
-                        msg = "OK"
-                        color = "green"
-                        print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
-                    elif test["sections"][section]["section status"] == "error":
-                        for wrong_line in test["sections"][section]['wrong_lines']:
-                            if wrong_line[2] is None:
-                                msg = "riga {} inattesa".format(wrong_line[0] + 1)
-                            elif wrong_line[1] is None:
-                                msg = "riga mancante (atteso '{}')".format(wrong_line[0] + 1, wrong_line[2])
-                            else:
-                                msg = "riga {} errata (atteso '{}', ottenuto '{}')".format(wrong_line[0] + 1, wrong_line[2],
-                                                                                           wrong_line[1])
-                            color = "red"
-                            print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
-                    else:
-                        msg = "missing section"
-                        color = "orange"
-                        print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
-
-            print('        </p>')
-
+        self.initial_printing()
+        self.print_tests_table()
+        self.print_tests_information()
+        self.print_summary_table()
         print("    </body>")
         print('</html>')
 
@@ -177,3 +144,93 @@ class HTMLFormatter(JSONFormatter):
                 except KeyError:
                     row.append("")
         return row
+
+    def print_tests_information(self):
+        header = self._tests_table_header_builder()
+        for test in self._tests:
+            print("        <hr>")
+            if len(self._tests) > 1:
+                print('        <p><a name="{}"><b>Test:</b> {}</a><br>'.format(test["title"].translate(_trantab),
+                                                                        test["title"].translate(_trantab)))
+            command_line = ""
+            for element in test["command_line"]:
+                command_line += " " + element
+            print('           <b>Riga di comando:</b> {}<br>'.format(command_line.translate(_trantab)))
+            if len(test["input_text"]) > 0:
+                print('            <b>Input:</b> {}<br>'.format(test["input_text"].translate(_trantab)))
+            if test["input_file_name"] is not None:
+                if test["input_file_name"] == "<temp.file>":
+                    input_file_name = "File Temporaneo"
+                else:
+                    input_file_name = test["input_file_name"]
+
+                print('            <b>{}:</b><br> {}<br>'.format(input_file_name.translate(_trantab),
+                                                          test["file_text"].translate(_trantab)))
+            for section in header:
+                if section != "TEST":
+                    if test["sections"][section]["section status"] == "ok":
+
+                        section_summary[section]["ok"] += 1
+                        total_summary["ok"] += 1
+
+                        msg = "OK"
+                        color = "green"
+                        print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
+                    elif test["sections"][section]["section status"] == "error":
+
+                        section_summary[section]["error"] += 1
+                        total_summary["error"] += 1
+
+                        for wrong_line in test["sections"][section]['wrong_lines']:
+                            if wrong_line[2] is None:
+                                msg = "riga {} inattesa".format(wrong_line[0] + 1)
+                            elif wrong_line[1] is None:
+                                msg = "riga mancante (atteso '{}')".format(wrong_line[0] + 1, wrong_line[2])
+                            else:
+                                msg = "riga {} errata (atteso '{}', ottenuto '{}')".format(wrong_line[0] + 1, wrong_line[2],
+                                                                                           wrong_line[1])
+                            color = "red"
+                            print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
+                    else:
+
+                        section_summary[section]["warning"] += 1
+                        total_summary["warning"] += 1
+
+                        msg = "missing section"
+                        color = "orange"
+                        print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
+
+            print('        </p>')
+        print("        <hr>")
+
+    def print_summary_table(self):
+        self._print_summary_table_header()
+        header = self._tests_table_header_builder()
+        for section in header:
+            if section != "TEST":
+                print("            <tr>")
+                print('                <td>{}</td>'.format(section))
+                print('                <td>{}</td>'.format(section_summary[section]["ok"]))
+                print('                <td>{}</td>'.format(section_summary[section]["warning"]))
+                print('                <td>{}</td>'.format(section_summary[section]["error"]))
+                print("            </tr>")
+
+        print("            <tr>")
+        print('                <td>{}</td>'.format("TOTAL"))
+        print('                <td>{}</td>'.format(total_summary["ok"]))
+        print('                <td>{}</td>'.format(total_summary["warning"]))
+        print('                <td>{}</td>'.format(total_summary["error"]))
+        print("            </tr>")
+
+        print("        </table>")
+
+    @staticmethod
+    def _print_summary_table_header():
+        print("""        <table align="center">
+            <tr>
+                <th>&nbsp;</th>
+                <th><font color= "green">Success</font></th>
+                <th><font color = "orange">Warning</font></th>
+                <th><font color = "red">Errors</font></th>
+            </tr>""")
+
