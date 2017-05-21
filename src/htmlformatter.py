@@ -1,7 +1,10 @@
 """Formatter producing HTML data"""
 
 from jsonformatter import JSONFormatter
+import i18n
 
+
+_ = i18n.translate
 _trans_dic = {"\n": "<br>", "–": "&ndash;", "—": "&mdash;", "&": "&amp;", ">": "&gt;", "<": "&lt;"}
 _trantab = str.maketrans(_trans_dic)
 
@@ -17,7 +20,7 @@ class HTMLFormatter(JSONFormatter):
             if element != "TEST":
                 section_summary[element] = {"ok": 0, "warning": 0, "error": 0}
 
-        self.initial_printing()
+        self.print_html_header()
         self.print_tests_table()
         self.print_tests_information()
         self.print_summary_table()
@@ -25,7 +28,8 @@ class HTMLFormatter(JSONFormatter):
         print('</html>')
 
     @staticmethod
-    def initial_printing():
+    def print_html_header():
+        """Print header and style."""
         print("""<!DOCTYPE html>
         <html>
             <head>
@@ -72,15 +76,19 @@ class HTMLFormatter(JSONFormatter):
             <body>""")
 
     def print_tests_table(self):
+        """Print a table containing tests' results."""
         print('                <table align="center">')
         print('                    <tr>')
+
         tests_table_header = self._tests_table_header_builder()
+
         self._print_tests_table_header(tests_table_header)
         self._print_tests_table_rows(tests_table_header)
+
         print("        </table>")
 
     def _tests_table_header_builder(self):
-        """Build the header.
+        """Build the table header.
 
         If there is only a test omits the header 'TEST'.
 
@@ -157,17 +165,17 @@ class HTMLFormatter(JSONFormatter):
         for test in self._tests:
             print("        <hr>")
             if len(self._tests) > 1:
-                print('        <p><a name="{}"><b>Test:</b> {}</a><br>'.format(test["title"].translate(_trantab),
+                print('        <p><a name="{}"><b>TEST:</b> {}</a><br>'.format(test["title"].translate(_trantab),
                                                                         test["title"].translate(_trantab)))
             command_line = ""
             for element in test["command_line"]:
                 command_line += " " + element
-            print('           <b>Riga di comando:</b> {}<br>'.format(command_line.translate(_trantab)))
+            print('           <b>{}:</b> {}<br>'.format(_("COMMAND LINE"), command_line.translate(_trantab)))
             if len(test["input_text"]) > 0:
-                print('            <b>Input:</b> {}<br>'.format(test["input_text"].translate(_trantab)))
+                print('            <b>INPUT:</b> {}<br>'.format(test["input_text"].translate(_trantab)))
             if test["input_file_name"] is not None:
                 if test["input_file_name"] == "<temp.file>":
-                    input_file_name = "File Temporaneo"
+                    input_file_name = _("TEMPORARY FILE")
                 else:
                     input_file_name = test["input_file_name"]
 
@@ -190,12 +198,12 @@ class HTMLFormatter(JSONFormatter):
 
                         for wrong_line in test["sections"][section]['wrong_lines']:
                             if wrong_line[2] is None:
-                                msg = "riga {} inattesa".format(wrong_line[0] + 1)
+                                msg = _("unexpected line '%s'") % (wrong_line[0] + 1)
                             elif wrong_line[1] is None:
-                                msg = "riga mancante (atteso '{}')".format(wrong_line[0] + 1, wrong_line[2])
+                                msg = _("missing line (expected '%s')") % (wrong_line[2])
                             else:
-                                msg = "riga {} errata (atteso '{}', ottenuto '{}')".format(wrong_line[0] + 1, wrong_line[2],
-                                                                                           wrong_line[1])
+                                msg = _("line %d is wrong  (expected '%s', got '%s')") % (wrong_line[0] + 1, wrong_line[2],
+                                                                                          wrong_line[1])
                             color = "red"
                             print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
                     else:
@@ -203,7 +211,7 @@ class HTMLFormatter(JSONFormatter):
                         section_summary[section]["warning"] += 1
                         total_summary["warning"] += 1
 
-                        msg = "missing section"
+                        msg = _("missing section")
                         color = "orange"
                         print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
 
@@ -223,7 +231,7 @@ class HTMLFormatter(JSONFormatter):
                 print("            </tr>")
 
         print("            <tr>")
-        print('                <td>{}</td>'.format("TOTAL"))
+        print('                <td>{}</td>'.format(_("TOTAL")))
         print('                <td>{}</td>'.format(total_summary["ok"]))
         print('                <td>{}</td>'.format(total_summary["warning"]))
         print('                <td>{}</td>'.format(total_summary["error"]))
@@ -236,8 +244,8 @@ class HTMLFormatter(JSONFormatter):
         print("""        <table align="center">
             <tr>
                 <th>&nbsp;</th>
-                <th><font color= "green">Success</font></th>
-                <th><font color = "orange">Warning</font></th>
-                <th><font color = "red">Errors</font></th>
-            </tr>""")
+                <th><font color= "green">{}</font></th>
+                <th><font color = "orange">{}</font></th>
+                <th><font color = "red">{}</font></th>
+            </tr>""".format(_("Successes"), _("Warnings"), _("Errors")))
 
