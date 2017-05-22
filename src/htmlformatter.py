@@ -32,52 +32,82 @@ class HTMLFormatter(JSONFormatter):
     def print_html_header():
         """Print header and style."""
         print("""<!DOCTYPE html>
-        <html>
-            <head>
-                <meta charset="utf-8">
-                <title>PvCheck Result</title>
-                <style rel="stylesheet" type="text/css">
-                    html {
-                      font-family: sans-serif;
-                    }
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>PvCheck Result</title>
+        <style rel="stylesheet" type="text/css">
 
-                    table {
-                      border-collapse: collapse;
-                      border: 2px solid rgb(200,200,200);
-                      letter-spacing: 1px;
-                      font-size: 0.8rem;
-                    }
+            html {
+              font-family: sans-serif;
+            }
+            
+            h1 {
+             overflow: hidden;
+             text-align: center;
+            }
+            h1:before,
+            h1:after {
+             background-color: #333;
+             content: "";
+             display: inline-block;
+             height: 1px;
+             position: relative;
+             vertical-align: middle;
+             width: 50%;
+            }
+            h1:before {
+             right: 0.5em;
+             margin-left: -50%;
+            }
+            h1:after {
+             left: 0.5em;
+             margin-right: -50%;
+            }
+            
+            table {
+              border-collapse: collapse;
+              border: 2px solid rgb(200,200,200);
+              letter-spacing: 1px;
+              font-size: 0.8rem;
+            }
 
-                    td, th {
-                      border: 1px solid rgb(190,190,190);
-                      padding: 10px 20px;
-                    }
+            td, th {
+              border: 1px solid rgb(190,190,190);
+              padding: 10px 20px;
+            }
 
-                    th {
-                      background-color: rgb(235,235,235);
-                    }
+            th {
+              background-color: rgb(235,235,235);
+            }
 
-                    td {
-                      text-align: center;
-                    }
+            td {
+              text-align: center;
+            }
 
-                    tr:nth-child(even) td {
-                      background-color: rgb(250,250,250);
-                    }
+            tr:nth-child(even) td {
+              background-color: rgb(250,250,250);
+            }
 
-                    tr:nth-child(odd) td {
-                      background-color: rgb(245,245,245);
-                    }
+            tr:nth-child(odd) td {
+              background-color: rgb(245,245,245);
+            }
 
-                    caption {
-                      padding: 10px;
-                    }
-                </style>
-            </head>
-            <body>""")
+            caption {
+              padding: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>PvCheck</h1>
+        <ul>
+            <li><a href="#summary">summary</a></li>
+            <li><a href="#info">info</a></li>
+        </ul>""")
 
     def print_tests_table(self):
         """Print a table containing tests' results."""
+        print('                     <h2 align="center">{}</h2>'.format(_("Test Result")))
         print('                <table align="center">')
         print('                    <tr>')
 
@@ -87,6 +117,7 @@ class HTMLFormatter(JSONFormatter):
         self._print_tests_table_rows(tests_table_header)
 
         print("        </table>")
+        print("        <br>")
 
     def _tests_table_header_builder(self):
         if len(self._tests) > 1:
@@ -153,6 +184,7 @@ class HTMLFormatter(JSONFormatter):
 
     def print_tests_information(self):
         """Print a section for each test containing results' information."""
+        print('        <h2><a name="info">Info</a></h2>')
         if self._tests[0]["error_message"] != "ok":
             self._print_error_message()
             exit(0)
@@ -259,13 +291,14 @@ class HTMLFormatter(JSONFormatter):
 
     @staticmethod
     def _print_summary_table_header():
-        print("""        <table align="center">
+        print("""        <a name="summary"><h2 align="center">{}</h2>
+        <table align="center">
             <tr>
                 <th>&nbsp;</th>
                 <th><font color= "green">{}</font></th>
                 <th><font color = "orange">{}</font></th>
                 <th><font color = "red">{}</font></th>
-            </tr>""".format(_("Successes"), _("Warnings"), _("Errors")))
+            </tr>""".format(_("Summary"), _("Successes"), _("Warnings"), _("Errors")))
 
     @staticmethod
     def _print_section_summary_row(section):

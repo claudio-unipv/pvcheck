@@ -88,6 +88,7 @@ FAILED TO RUN THE FILE '{progname}' $ IMPOSSIBILE ESEGUIRE IL FILE '{progname}'
 (the file does not exist) $ (file inesistente)
 (... plus other %d lines ...) $ (... più altre %d righe ...)
 SUMMARY $ RIEPILOGO
+Summary $ Riepilogo
 successes $ successi
 Successes $ Successi
 warnings $ avvertimenti
@@ -106,6 +107,7 @@ program to be tested. $ programma da testare.
 any arguments of the program to be tested. $ eventuali argomenti del programma da testare.
 [run|info|export] --help for command help (default=run) $ [run|info|export] --help per l'help di un comando (default=run)
 test a program. $ testa un programma.
+Test Result $ Risultato Test
 
 positional arguments $ argomenti posizionali
 optional arguments $ argomenti opzionali
