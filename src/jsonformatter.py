@@ -87,7 +87,7 @@ class JSONFormatter(formatter.Formatter):
 
         wrong = [(n, a, b) for (n, a, b, d)
                  in zip_longest(range(len(diffs)), got.content,
-                                expected.content, diffs)
+                                matches, diffs)
                  if d > 0]
             
         s = OrderedDict([

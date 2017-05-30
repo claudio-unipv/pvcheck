@@ -183,6 +183,7 @@ class TextFormatter(Formatter):
         l = max(map(len, tags))
         for t in sorted(tags):
             row = ["{:{}}:".format(t, l)]
+
             row.append("%2d %s," % (self._sect_ok[t], _("successes")))
             row.append("%2d %s," % (self._sect_warn[t], _("warnings")))
             row.append("%2d %s" % (self._sect_err[t], _("errors")))
@@ -211,6 +212,10 @@ class TextFormatter(Formatter):
             self.info(f(_("TEMPORARY FILE"), tempfile))
 
     def execution_result(self, cmdline_args, execution_result):
+        # se tutto test ok -> program ok
+        # se errore -> program error
+        # se warning e non errore -> program warning
+
         if execution_result.result == executor.ER_OK:
             self._sect_ok[_("<program>")] += 1
         else:
