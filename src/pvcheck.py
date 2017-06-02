@@ -28,6 +28,7 @@ class PvCheck:
             for test in suite.test_cases():
                 if not self._exec_test(test, args, timeout=timeout):
                     failures += 1
+                self._fmt.end_test()
         finally:
             self._fmt.end_session()
         return failures
@@ -42,6 +43,7 @@ class PvCheck:
         try:
             success = self._exec_test(test, args, timeout=None)
         finally:
+            self._fmt.end_test()
             self._fmt.end_session()
         return success
 

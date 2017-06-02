@@ -89,6 +89,7 @@ FAILED TO RUN THE FILE '{progname}' $ IMPOSSIBILE ESEGUIRE IL FILE '{progname}'
 (... plus other %d lines ...) $ (... più altre %d righe ...)
 SUMMARY $ RIEPILOGO
 Summary $ Riepilogo
+summary $ riepilogo
 successes $ successi
 Successes $ Successi
 warnings $ avvertimenti

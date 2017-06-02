@@ -98,18 +98,18 @@ class HTMLFormatter(JSONFormatter):
             }
         </style>
     </head>
-    <body>
-        <h1>PvCheck</h1>
+    <body>""")
+        print("""       <h1>PvCheck</h1>
         <ul>
-            <li><a href="#summary">summary</a></li>
+            <li><a href="#summary">{}</a></li>
             <li><a href="#info">info</a></li>
-        </ul>""")
+        </ul>""".format(_("summary")))
 
     def print_tests_table(self):
         """Print a table containing tests' results."""
-        print('                     <h2 align="center">{}</h2>'.format(_("Test Result")))
-        print('                <table align="center">')
-        print('                    <tr>')
+        print('        <h2 align="center">{}</h2>'.format(_("Test Result")))
+        print('        <table align="center">')
+        print('            <tr>')
 
         tests_table_header = self._tests_table_header_builder()
 
@@ -224,7 +224,7 @@ class HTMLFormatter(JSONFormatter):
         command_line = ""
         for element in test["command_line"]:
             command_line += " " + element
-        print('           <b>{}:</b> {}<br>'.format(_("COMMAND LINE"), command_line.translate(_trantab)))
+        print('            <b>{}:</b> {}<br>'.format(_("COMMAND LINE"), command_line.translate(_trantab)))
 
     @staticmethod
     def _print_input_text(test):

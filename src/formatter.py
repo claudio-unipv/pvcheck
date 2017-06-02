@@ -211,7 +211,7 @@ class TextFormatter(Formatter):
             self.info(f(_("INPUT"), input))
         if tempfile is not None:
             self.info(f(_("TEMPORARY FILE"), tempfile))
-        self._test_status = None # initialize test status
+        self._test_status = None  # initialize test status
 
     def end_test(self):
         if self._test_status == "ok":
