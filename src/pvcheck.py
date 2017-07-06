@@ -17,7 +17,7 @@ class PvCheck:
         self._exec = executor
         self._fmt = formatter
 
-    def exec_suite(self, suite, args, timeout=None):
+    def exec_suite(self, suite, args, timeout=None, output_limit=None):
         """Verify the program with a collection of test cases.
 
         Return the number of failed tests.
@@ -26,13 +26,14 @@ class PvCheck:
         failures = 0
         try:
             for test in suite.test_cases():
-                if not self._exec_test(test, args, timeout=timeout):
+                if not self._exec_test(test, args, timeout=timeout,
+                                       output_limit=output_limit):
                     failures += 1
         finally:
             self._fmt.end_session()
         return failures
 
-    def exec_single_test(self, test, args, timeout=None):
+    def exec_single_test(self, test, args, timeout=None, output_limit=None):
         """Verify the program on a single test case.
 
         Return True if the test has been successfully passed.
@@ -40,12 +41,13 @@ class PvCheck:
         self._fmt.begin_session()
         success = False
         try:
-            success = self._exec_test(test, args, timeout=None)
+            success = self._exec_test(test, args, timeout=timeout,
+                                      output_limit=output_limit)
         finally:
             self._fmt.end_session()
         return success
 
-    def _exec_test(self, test, args, timeout=None):
+    def _exec_test(self, test, args, timeout=None, output_limit=None):
         # Run the program and verify it according to the test case.
         # Return True if the test is successful.
         input = test.find_section_content(".INPUT", "")
@@ -62,7 +64,8 @@ class PvCheck:
 
         exec_result = self._exec.exec_process(
             args, input, tmpfile=tmpfile,
-            timeout=timeout
+            timeout=timeout,
+            output_limit=output_limit
         )
         self._fmt.execution_result(args, exec_result)
         if exec_result.result == executor.ER_OK:

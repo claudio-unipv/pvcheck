@@ -23,9 +23,10 @@ _DEFAULT_LOG_FILE = os.path.expanduser("~/.pvcheck.log")
 def parse_options():
     """Parse the command line."""
 
-    shortopts = "hc:t:v:m:C:Vo:l:"
+    shortopts = "hc:t:v:m:C:Vo:l:L:"
     longopts = ["help", "config=", "timeout=", "verbosity=",
-                "max-errors=", "color=", "valgrind", "output=", "log="]
+                "max-errors=", "color=", "valgrind", "output=",
+                "log=", "output-limit="]
     try:
         opts, args = getopt.getopt(sys.argv[1:], shortopts, longopts)
     except getopt.GetoptError as err:
@@ -44,6 +45,11 @@ def parse_options():
         print(_(i18n.USAGE_en))
         sys.exit(2)
 
+    def invalid(cond, fmt, val):
+        if cond:
+            print(_("Invalid parameter"), "('%s')" % (fmt % val))
+            sys.exit(2)
+
     def optval(key1, key2, default=None, result_type=None):
         x = opts.get(key1, opts.get(key2, default))
         if result_type is None:
@@ -51,43 +57,37 @@ def parse_options():
         try:
             return result_type(x)
         except ValueError:
-            print(_("Invalid parameter ('%s')") % x)
-            sys.exit(2)
+            invalid(True, '%s', x)
 
     verbosity = optval('-v', '--verbosity', '3', int)
-    if verbosity < 0 or verbosity > 4:
-        print(_("Invalid parameter ('%d')") % verbosity)
-        sys.exit(2)
+    invalid(verbosity < 0 or verbosity > 4, '%d', verbosity)
 
     timeout = optval('-t', '--timeout', '10', float)
-    if timeout < 0:
-        print(_("Invalid parameter ('%f')") % timeout)
-        sys.exit(2)
+    invalid(timeout < 0, '%f', timeout)
 
     maxerrors = optval('-m', '--max-errors', '4', int)
-    if maxerrors < 1:
-        print(_("Invalid parameter ('%d')") % maxerrors)
-        sys.exit(2)
+    invalid(maxerrors < 1, '%d', maxerrors)
 
     config = optval('-c', '--config', '', str)
 
-    color = optval('-C', '--color', 'AUTO', str).upper()
-    if color not in ("YES", "NO", "AUTO"):
-        print(_("Invalid parameter ('%s')") % color)
-        sys.exit(2)
-    color = (color == "YES" or (color == "AUTO" and sys.stdout.isatty()))
+    color = optval('-C', '--color', 'AUTO', str)
+    invalid(color.upper() not in ("YES", "NO", "AUTO"), '%s', color)
+    color = (color.upper() == "YES" or
+             (color.upper() == "AUTO" and sys.stdout.isatty()))
 
     output = optval('-o', '--output', 'resume', str).upper()
-    if output not in ("RESUME", "JSON"):
-        print(_("Invalid parameter ('%s')") % output)
-        sys.exit(2)
+    invalid(output not in ("RESUME", "JSON"), '%s', output)
 
     logfile = optval('-l', '--log', _DEFAULT_LOG_FILE, str)
-        
+
+    output_limit = optval('-L', '--output-limit', 10000, int)
+    invalid(output_limit < 0, '%d', output_limit)
+
     valgrind = (True if '-V' in opts or '--valgrind' in opts else False)
     opts = dict(config=config, verbosity=verbosity, timeout=timeout,
                 maxerrors=maxerrors, color=color, valgrind=valgrind,
-                output=output, logfile=logfile)
+                output=output, logfile=logfile,
+                output_limit=output_limit)
 
     return (args, opts)
 
@@ -117,8 +117,8 @@ def main():
     execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
                 else executor.Executor)
     exe = execlass()
-        
-    
+
+
     if opts["output"] == "JSON":
         fmt = jsonformatter.JSONFormatter(indent=4)
     else:
@@ -135,7 +135,8 @@ def main():
         combfmt = formatter.CombinedFormatter([fmt, logfmt])
         pvc = pvcheck.PvCheck(exe, combfmt)
         failures = pvc.exec_suite(suite, args[1:],
-                                  timeout=opts["timeout"])
+                                  timeout=opts["timeout"],
+                                  output_limit=opts["output_limit"])
         retcode = min(failures, 254)
         logfile.write("\n")
     sys.exit(retcode)

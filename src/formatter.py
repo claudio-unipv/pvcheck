@@ -75,6 +75,8 @@ class TextFormatter(Formatter):
         executor.ER_OK: (DEBUG, []),
         executor.ER_TIMEOUT:
         (ERROR, [_("TIMEOUT EXPIRED: PROCESS TERMINATED")]),
+        executor.ER_OUTPUT_LIMIT:
+        (ERROR, [_("TOO MANY OUTPUT LINES")]),
         executor.ER_SEGFAULT:
         (ERROR, [_("PROCESS ENDED WITH A FAILURE"),
                  _("(SEGMENTATION FAULT)")]),

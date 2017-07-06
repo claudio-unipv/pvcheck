@@ -47,6 +47,8 @@ Options:
   -t, --timeout=T          set how many seconds it should be waited for the
                            termination of the program.  The default is 10
                            seconds.
+  -L, --output-limit=L     cut the output of the program to a maximum of L
+lines.  The default is 10000.
   -m, --max-errors=N       reports up to N errors per section (default 4).
   -c, --config=FILE        uses the specified configuration file.
   -C, --color=YES|NO|AUTO  enable or disable colored output (default AUTO).
@@ -70,6 +72,8 @@ Opzioni:
   -t, --timeout=T          imposta per quanti secondi bisogna attendere
                            la terminazione del programma.  Il default è
                            pari a 10 secondi.
+  -L, --output-limit=L     taglia l'output del programma ad un massimo di L
+                           linee.  Il default è 10000.
   -m, --max-errors=N       riporta fino ad un massimo di N errori per
                            sezione (default 4).
   -c, --config=FILE        utilizza il file di configurazione specificato.
@@ -113,8 +117,9 @@ detailed comparison $ confronto dettagliato
 missing section $ sezione mancante
 empty section $ sezione vuota
 extra section $ sezione extra
-Invalid parameter ('%s') $ Parametro non valido ('%s')
+Invalid parameter $ Parametro non valido
 TIMEOUT EXPIRED: PROCESS TERMINATED $ TEMPO LIMITE SCADUTO: PROCESSO TERMINATO
+TOO MANY OUTPUT LINES $ TROPPE LINEE DI OUTPUT
 PROCESS ENDED WITH A FAILURE $ PROCESSO TERMINATO CON UN FALLIMENTO
 (SEGMENTATION FAULT) $ (SEGMENTATION FAULT)
 (ERROR CODE {status}) $ (CODICE D'ERRORE {status})

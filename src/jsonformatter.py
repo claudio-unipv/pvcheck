@@ -22,6 +22,7 @@ class JSONFormatter(formatter.Formatter):
     _RESULT_TABLE = {
         executor.ER_OK: "ok",
         executor.ER_TIMEOUT: "TIMEOUT EXPIRED: PROCESS TERMINATED",
+        executor.ER_OUTPUT_LIMIT: "TOO MANY OUTPUT LINES",
         executor.ER_SEGFAULT:
         "PROCESS ENDED WITH A FAILURE (SEGMENTATION FAULT)",
         executor.ER_ERROR:
