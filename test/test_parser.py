@@ -49,6 +49,22 @@ line4
         self.assertEqual(l[0].tag, 'EMPTY')
         self.assertEqual(l[0].content, [])
 
+    def test_parse_section_with_hyphens(self):
+        l = list(parse_sections('''[GREAT-TEST]
+great-test 1
+great-test 2
+
+[ANOTHER-BRICK-IN-THE-WALL]
+another
+brick
+in the wall
+'''.splitlines()))
+        self.assertEqual(len(l), 2)
+        self.assertEqual(l[0].tag, 'GREAT-TEST')
+        self.assertEqual(l[0].content, ['great-test 1', 'great-test 2'])
+        self.assertEqual(l[1].tag, 'ANOTHER-BRICK-IN-THE-WALL')
+        self.assertEqual(l[1].content, ['another', 'brick', 'in the wall'])
+        
 
 if __name__ == '__main__':
     unittest.main()

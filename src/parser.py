@@ -20,7 +20,7 @@ import testdata
 # Enter n:  [SECTION]
 # 42
 #
-_RE_HEADER = re.compile(r"[^[]*\[\s*(?P<tag>[._a-zA-Z][._\w]*)\s*\]\s*")
+_RE_HEADER = re.compile(r"[^[]*\[\s*(?P<tag>[-._a-zA-Z][-._\w]*)\s*\]\s*")
 
 
 def parse_sections(f):
