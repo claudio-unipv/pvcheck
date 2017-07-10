@@ -29,6 +29,7 @@ class PvCheck:
                 if not self._exec_test(test, args, timeout=timeout,
                                        output_limit=output_limit):
                     failures += 1
+                self._fmt.end_test()
         finally:
             self._fmt.end_session()
         return failures
@@ -44,6 +45,7 @@ class PvCheck:
             success = self._exec_test(test, args, timeout=timeout,
                                       output_limit=output_limit)
         finally:
+            self._fmt.end_test()
             self._fmt.end_session()
         return success
 

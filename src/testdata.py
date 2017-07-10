@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 from itertools import chain
+from i18n import translate as _
 
 
 class Section:
@@ -111,6 +112,20 @@ class TestSuite:
     def test_cases(self):
         """Return the list of test cases in the suite."""
         return self._cases
+
+    def test_case(self, test_number):
+        """Return a test case."""
+        try:
+            if test_number < 0:
+                raise IndexError
+            test_case = self.test_cases()[test_number]
+        except IndexError:
+            fmt = _("Test number %d doesn't exist.")
+            msg = fmt % (test_number + 1)
+            print("\n" + msg + "\n")
+            print(_("Use './pvcheck info' to list all the available tests.") + "\n")
+            exit(2)
+        return test_case
 
     def _group_tests(self, sections):
         name = None

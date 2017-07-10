@@ -5,7 +5,7 @@ TARGET=pvcheck
 all:  $(TARGET)
 
 
-$(TARGET):
+$(TARGET): src/*.py
 	make -C src
 	cp src/$(TARGET) .
 

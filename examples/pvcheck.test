@@ -1,0 +1,53 @@
+#!./pvcheck
+
+# La riga qui sopra non e` obbligatoria e consente di eseguire il test
+# come se fosse uno script.
+
+#######################################################################
+# ESEMPIO SEMPLICE (TEST SINGOLO)
+#######################################################################
+
+
+# I test sono divisi in sezioni i cui nomi sono racchiusi in parentesi
+# quadre.
+
+# Le righe vuote e quelle che iniziano con il carattere '#' sono
+# ignorate.
+
+# Le righe non vuote vengono confrontate con quelle emesse dal
+# programma nella sezione corrispondente.
+
+
+[AAA]
+# Nel caso di numeri interi si confronta il valore (05, +5 e 5 sono
+#equivalenti).
+1 2 3
+4 05 +6
+
+[BBB]
+# Nel caso di numeri con una parte decimale, prima di procedere al
+#confronto i valori prodotti dal programma vengono arrotondati al
+#numero di cifre esplicitamente indicati nel caso di test (due negli
+#esempio qui sotto).
+3.14
+6.28
+
+[CCC]
+# In tutti gli altri casi si procede con un confronto delle parole che
+# compongono le righe non vuote.
+abc
+def
+
+
+# La sezione speciale ".SECTIONS" consente di specificare opzioni per
+# le sezioni ad esempio, la riga seguente indica che l'ordine delle
+# righe in DDD non e` rilevante.  Solitamente le opzioni sono
+# dichiarate all'inizio del file di test oppure in un file di
+# configurazione separato.
+
+[.SECTIONS]
+DDD unordered
+
+[DDD]
+one two three
+four five

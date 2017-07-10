@@ -88,7 +88,7 @@ class JSONFormatter(formatter.Formatter):
 
         wrong = [(n, a, b) for (n, a, b, d)
                  in zip_longest(range(len(diffs)), got.content,
-                                expected.content, diffs)
+                                matches, diffs)
                  if d > 0]
             
         s = OrderedDict([
@@ -102,4 +102,4 @@ class JSONFormatter(formatter.Formatter):
         
     def missing_section(self, expected):
         s = OrderedDict([("section status", "missing")])
-        self._sections["expected.tag"] = s
+        self._sections[expected.tag] = s

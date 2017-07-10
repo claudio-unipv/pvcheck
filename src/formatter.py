@@ -104,6 +104,7 @@ class TextFormatter(Formatter):
         self._dst = destination
         self._maxerrors = maxerrors
         self._testcount = 0
+        self._test_status = None
 
     def set_verbosity(self, verbosity=None):
         """Set a new verbosity level (0-4)."""
@@ -185,6 +186,7 @@ class TextFormatter(Formatter):
         l = max(map(len, tags))
         for t in sorted(tags):
             row = ["{:{}}:".format(t, l)]
+
             row.append("%2d %s," % (self._sect_ok[t], _("successes")))
             row.append("%2d %s," % (self._sect_warn[t], _("warnings")))
             row.append("%2d %s" % (self._sect_err[t], _("errors")))
@@ -211,12 +213,17 @@ class TextFormatter(Formatter):
             self.info(f(_("INPUT"), input))
         if tempfile is not None:
             self.info(f(_("TEMPORARY FILE"), tempfile))
+        self._test_status = None  # initialize test status
 
-    def execution_result(self, cmdline_args, execution_result):
-        if execution_result.result == executor.ER_OK:
+    def end_test(self):
+        if self._test_status == "ok":
             self._sect_ok[_("<program>")] += 1
+        elif self._test_status == "warning":
+            self._sect_warn[_("<program>")] += 1
         else:
             self._sect_err[_("<program>")] += 1
+
+    def execution_result(self, cmdline_args, execution_result):
         info = {
             'progname': cmdline_args[0],
             'status': execution_result.status
@@ -237,9 +244,12 @@ class TextFormatter(Formatter):
     def comparison_result(self, expected, got, diffs, matches):
         if max(diffs, default=0) == 0:
             self._sect_ok[expected.tag] += 1
+            if self._test_status is None:
+                self._test_status = "ok"
             self.success("{}: {}".format(expected.tag, _("OK")))
         else:
             self._sect_err[expected.tag] += 1
+            self._test_status = "error"
             if len(expected.content) != len(got.content):
                 fmt = _("wrong number of lines (expected %d, got %d)")
                 msg = fmt % (len(expected.content), len(got.content))
@@ -291,6 +301,8 @@ class TextFormatter(Formatter):
             self.debug(fmt % (prnt(e), prnt(a)))
 
     def missing_section(self, expected):
+        if self._test_status is "ok" or self._test_status is None:
+            self._test_status = "warning"
         self._sect_warn[expected.tag] += 1
         self.warning(expected.tag + ": " + _("missing section"))
 
@@ -360,5 +372,3 @@ class CombinedFormatter(Formatter):
     def missing_section(self, *args):
         for f in self.formatters:
             f.missing_section(*args)
-
-    
