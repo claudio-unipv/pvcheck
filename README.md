@@ -15,7 +15,7 @@ following parameters:
 For instance, after the compilation of 'program.c', the tool ca be tried by typing the command:
 
 ```
-./pvcheck example.test ./program 3
+./pvcheck -f example.test ./program 3
 ```
 
 where "3" is an argument to be passed to 'program' (it accepts as
@@ -26,7 +26,7 @@ Multiple tests (a "suite") can be run with a single invocation,
 provided that they are suitably defined:
 
 ```
-./pvcheck example2.test ./program2
+./pvcheck -f example2.test ./program2
 ```
     
 The format of test definition files is very simple.  The examples
