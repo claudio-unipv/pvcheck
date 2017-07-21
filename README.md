@@ -1,13 +1,15 @@
 pvcheck
 =======
 
-pvcheck is a tool for the automated testing of computer programs developed and used at the University of Pavia. 
+pvcheck is a tool that automates the testing of computer programs by checking the textual output of the program under testing with a set of user-defined test cases.
 
-Prerequisites
+pvcheck has been developed to be used as automatic correction tool in the courses of Principles of Computer Programming at the University of Pavia.
+
+Requirements
 -------------
 
-pvcheck requires a Python interpreter (tried with version 3.4.3) and
-can be executed as a standalone application.
+pvcheck requires a Python interpreter and can be executed as a standalone application.
+The current version has been tested with Python 3.4.3.
 
 Installation
 ------------
@@ -29,24 +31,30 @@ make
 Usage
 -----
 
-### help ###
+pvcheck has 3 main arguments ([run](#run), [info](#info) and [export](#export)) .
 
-pvcheck is subdivided into three subcommands ([run](#run), [info](#info) and [export](#export)) .
+### help ###
 
 To see the main help:
 
 ```
 pvcheck -h
 ```
+
+or 
+
 ```
 pvcheck --help
 ```
 
-To see the help of the specified subcommand:
+To see the help of a specific command:
 
 ```
 pvcheck subcommand -h
 ```
+
+or
+
 ```
 pvcheck subcommand --help
 ```
