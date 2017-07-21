@@ -50,18 +50,18 @@ pvcheck --help
 To see the help of a specific command:
 
 ```
-pvcheck subcommand -h
+pvcheck argument -h
 ```
 
 or
 
 ```
-pvcheck subcommand --help
+pvcheck argument --help
 ```
 
-### the <a name="run"></a>run subcommand ###
+### the <a name="run"></a>run argument ###
 
-The run subcommand, being the default subcommand, also works without explicit invocation. So
+The run argument, being the default argument, also works without explicit invocation. So
 
 ```
 pvcheck run ./program
@@ -94,7 +94,7 @@ pvcheck --file testfile ./program
 
 #### test a program with a specific test of a test suite ####
 
-If you want to test a program using a specific test contained in a test suite, you can use the [info subcommand](#info) to list all the available tests. Then you can use:
+If you want to test a program using a specific test contained in a test suite, you can use the [info argument](#info) to list all the available tests. Then you can use:
 
 ```
 pvcheck -T testnumber ./program
@@ -217,9 +217,9 @@ pvcheck --color option ./program
 
 The options available are *YES*, *NO* and *AUTO*. The default value is *AUTO*.
 
-### the <a name="info"></a>info subcommand ###
+### the <a name="info"></a>info argument ###
 
-The info subcommand lists all the available tests in a test file. 
+The info argument lists all the available tests in a test file. 
 
 To see all the tests available in a test file:
 
@@ -227,11 +227,11 @@ To see all the tests available in a test file:
 pvcheck info testfile
 ``` 
 
-### the <a name="export"></a>export subcommand ###
+### the <a name="export"></a>export argument ###
 
-The export subcommand allows you to export in a file the input arguments from the selected test.
+The export argument allows you to export in a file the input arguments from the selected test.
 
-To export the input argument from a test, you can use the [info subcommand](#info) to list all the available tests. Then you can use:
+To export the input argument from a test, you can use the [info argument](#info) to list all the available tests. Then you can use:
 
 ```
 pvcheck export testnumber testfile
