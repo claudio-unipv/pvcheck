@@ -42,22 +42,27 @@ y
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_OK, 0, "", "")
         f.execution_result(["prog"], res)
+        f.end_test()
         
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_SEGFAULT, -1, "", "")
         f.execution_result(["prog"], res)
+        f.end_test()
 
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_TIMEOUT, 0, "", "")
         f.execution_result(["prog"], res)
+        f.end_test()
 
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_ERROR, 42, "", "")
         f.execution_result(["prog"], res)
+        f.end_test()
 
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_NOTFILE, 1, "", "")
         f.execution_result(["prog"], res)
+        f.end_test()
         
         f.end_session()
         exp = """PROCESS ENDED WITH A FAILURE (SEGMENTATION FAULT)
