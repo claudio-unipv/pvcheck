@@ -279,7 +279,7 @@ SECTION2 unordered
 [SECTION2]
 ...
 ``` 
-indicates that the order of the lines in the SECTION1 section is not relevant.
+indicates that the order of the lines in the SECTION2 section is not relevant.
 
 #### the special section [.TEST] ####
 
