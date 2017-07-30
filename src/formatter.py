@@ -224,10 +224,6 @@ class TextFormatter(Formatter):
             self._sect_err[_("<program>")] += 1
 
     def execution_result(self, cmdline_args, execution_result):
-        if execution_result.result == executor.ER_OK:
-            self._sect_ok[_("<program>")] += 1
-        else:
-            self._sect_err[_("<program>")] += 1
         info = {
             'progname': cmdline_args[0],
             'status': execution_result.status
