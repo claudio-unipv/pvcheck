@@ -252,7 +252,8 @@ Empty lines, and lines starting with '#' are ignored.
 
 Non-empty lines are compared against those produced by the program in the corresponding section.
 
-The format of test definition files is very simple and this examples include comments that describe it briefly:
+The format of test definition files is rather simple.
+The following examples include comments to concisely describe the various aspects of the format:
 
 * [single test case](https://github.com/claudio-unipv/pvcheck/blob/master/examples/example.test) 
 * [multiple test cases](https://github.com/claudio-unipv/pvcheck/blob/master/examples/example2.test)
@@ -263,7 +264,8 @@ The format of test definition files is very simple and this examples include com
 
 #### the special section [.SECTIONS] ####
 
-The special section [.SECTIONS] allows you to specify additional options for the sections. Options are usually declared at the beginning of the test file, or in a separate configuration file.
+The special section [.SECTIONS] allows to specify additional options for the sections.
+Options are usually declared at the beginning of the test file, or in a separate configuration file.
 
 For example:
 
@@ -285,7 +287,7 @@ indicates that the order of the lines in the SECTION2 section is not relevant.
 
 In case of multiple tests, each test is introduced by the special section [.TEST] followed by the name of the test.
 
-example:
+Example:
 
 ```
 ...
@@ -313,15 +315,15 @@ Common parts among all the test cases (for instance options in the [.SECTIONS] s
 
 #### the special section [.INPUT] ####
 
-The special section [.INPUT] allows you to specify text to be sent to the program via its standard input;
+The special section [.INPUT] allows to specify the text to be written on the program's standard input:
 
-example:
+Example:
 
 ```
 ...
 
 [.TEST]
-Test1
+Name of the test
 
 [.INPUT]
 input1
@@ -335,7 +337,7 @@ input2
 ...
 
 [.TEST]
-Test2
+Thi is another test
 
 [.INPUT]
 input3
@@ -351,9 +353,9 @@ input4
 
 #### the special section [.ARGS] ####
 
-The special section [.ARGS] allows you to specify additional arguments to be passed with the command line (one extra argument per line).
+The special section [.ARGS] allows to specify additional arguments to be passed on the command line, one extra argument per line.
 
-example:
+Example:
 
 ```
 ...
@@ -389,9 +391,11 @@ arg4
 
 #### the special section [.FILE] ####
 
-The special section [.FILE] should be used together with the special section [.ARGS]. In the special section [.ARGS], the special argument ".FILE" will be replaced by the name of the temporary file. Each [.FILE] directive corresponds to the content to be written to the temporary file.
+The special section [.FILE] shall be used together with the special section [.ARGS].
+When the special argument ".FILE" is present in the [.ARGS] section, a temporary file is automatically generated and filled with the content of the text in the [.FILE] section.
+The name of the temporary file is passed on the command line of the program under test.
 
-example:
+Example:
 
 ```
 ...
@@ -404,8 +408,8 @@ example:
 Test1
 
 [.FILE]
-first temporary file content
-second temporary file content
+first line written in the temporary file used for Test1
+second line written in the temporary file used for Test1
 ...
 
 [SECTION1]
@@ -418,8 +422,8 @@ second temporary file content
 Test2
 
 [.FILE]
-third temporary file content
-fourth temporary file content
+first line written in the temporary file used for Test2
+second line written in the temporary file used for Test2
 ...
 
 [SECTION1]
