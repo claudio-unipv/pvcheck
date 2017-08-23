@@ -242,14 +242,196 @@ The output file is saved into the current directory with the name testname.dat .
 Test File<a name="testfile"></a>
 ---------
 
-A test file is a file containing one or more test cases.
+### description ###
 
-The format of test definition files is very simple and this examples include comments that describe it briefly:
+A test file is a file which contains one or more test cases.
+
+Tests are divided in sections with names between square brackets.
+
+Empty lines, and lines starting with '#' are ignored.
+
+Non-empty lines are compared against those produced by the program in the corresponding section.
+
+The format of test definition files is rather simple.
+The following examples include comments to concisely describe the various aspects of the format:
 
 * [single test case](https://github.com/claudio-unipv/pvcheck/blob/master/examples/example.test) 
 * [multiple test cases](https://github.com/claudio-unipv/pvcheck/blob/master/examples/example2.test)
 * [multiple output lines](https://github.com/claudio-unipv/pvcheck/blob/master/examples/example3.test)
 * [temporary files](https://github.com/claudio-unipv/pvcheck/blob/master/examples/example4.test)
+
+### special sections ###
+
+#### the special section [.SECTIONS] ####
+
+The special section [.SECTIONS] allows to specify additional options for the sections.
+Options are usually declared at the beginning of the test file, or in a separate configuration file.
+
+For example:
+
+```
+...
+
+[SECTION1]
+...
+
+[.SECTIONS]
+SECTION2 unordered
+
+[SECTION2]
+...
+``` 
+indicates that the order of the lines in the SECTION2 section is not relevant.
+
+#### the special section [.TEST] ####
+
+In case of multiple tests, each test is introduced by the special section [.TEST] followed by the name of the test.
+
+Example:
+
+```
+...
+
+[.TEST]
+Test1
+
+[SECTION1]
+...
+
+[SECTION2]
+...
+
+[.TEST]
+Test2
+
+[SECTION1]
+...
+
+[SECTION2]
+...
+``` 
+
+Common parts among all the test cases (for instance options in the [.SECTIONS] special section) can be specified before the first [.TEST] section. They will be prepended to all the tests.
+
+#### the special section [.INPUT] ####
+
+The special section [.INPUT] allows to specify the text to be written on the program's standard input:
+
+Example:
+
+```
+...
+
+[.TEST]
+Name of the test
+
+[.INPUT]
+input1
+input2
+...
+
+[SECTION1]
+...
+
+[SECTION2]
+...
+
+[.TEST]
+Thi is another test
+
+[.INPUT]
+input3
+input4
+...
+
+[SECTION1]
+...
+
+[SECTION2]
+...
+``` 
+
+#### the special section [.ARGS] ####
+
+The special section [.ARGS] allows to specify additional arguments to be passed on the command line, one extra argument per line.
+
+Example:
+
+```
+...
+
+[.TEST]
+Test1
+
+[.ARGS]
+arg1
+arg2
+...
+
+[SECTION1]
+...
+
+[SECTION2]
+...
+
+[.TEST]
+Test2
+
+[.ARGS]
+arg3
+arg4
+...
+
+[SECTION1]
+...
+
+[SECTION2]
+...
+``` 
+
+#### the special section [.FILE] ####
+
+The special section [.FILE] shall be used together with the special section [.ARGS].
+When the special argument ".FILE" is present in the [.ARGS] section, a temporary file is automatically generated and filled with the content of the text in the [.FILE] section.
+The name of the temporary file is passed on the command line of the program under test.
+
+Example:
+
+```
+...
+
+[.ARGS]
+.FILE
+...
+
+[.TEST]
+Test1
+
+[.FILE]
+first line written in the temporary file used for Test1
+second line written in the temporary file used for Test1
+...
+
+[SECTION1]
+...
+
+[SECTION2]
+...
+
+[.TEST]
+Test2
+
+[.FILE]
+first line written in the temporary file used for Test2
+second line written in the temporary file used for Test2
+...
+
+[SECTION1]
+...
+
+[SECTION2]
+...
+``` 
 
 Wiki
 ----
