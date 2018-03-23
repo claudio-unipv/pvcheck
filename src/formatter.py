@@ -167,9 +167,19 @@ class TextFormatter(Formatter):
     def begin_session(self):
         # Initialize the counters for the summary
         self._testcount = 0
-        self._sect_ok = defaultdict(int)
-        self._sect_warn = defaultdict(int)
-        self._sect_err = defaultdict(int)
+        self._sect_results = []
+
+    def _unique(self, seq):
+        # Unique elements in seq, preserving their order of occurrence
+        seen = set()
+        for x in seq:
+            if x in seen:
+                continue
+            seen.add(x)
+            yield x
+
+    def _count_results(self, tag, label):
+        return sum(1 for x in self._sect_results if x == (tag, label))
 
     def end_session(self):
         if self._testcount < 2:
@@ -181,15 +191,14 @@ class TextFormatter(Formatter):
         self.info("")
         self.info(_("SUMMARY"))
 
-        tags = set(list(self._sect_ok) + list(self._sect_warn) +
-                list(self._sect_err))
+        tags = list(self._unique(x[0] for x in self._sect_results))
         l = max(map(len, tags))
-        for t in sorted(tags):
+        for t in tags:
             row = ["{:{}}:".format(t, l)]
 
-            row.append("%2d %s," % (self._sect_ok[t], _("successes")))
-            row.append("%2d %s," % (self._sect_warn[t], _("warnings")))
-            row.append("%2d %s" % (self._sect_err[t], _("errors")))
+            row.append("%2d %s," % (self._count_results(t, "ok"), _("successes")))
+            row.append("%2d %s," % (self._count_results(t, "waring"), _("warnings")))
+            row.append("%2d %s" % (self._count_results(t, "error"), _("errors")))
             self.info("  ".join(row))
         self.info("")
         self._testcount = 0
@@ -217,11 +226,11 @@ class TextFormatter(Formatter):
 
     def end_test(self):
         if self._test_status == "ok":
-            self._sect_ok[_("<program>")] += 1
+            self._sect_results.append((_("<program>"), "ok"))
         elif self._test_status == "warning":
-            self._sect_warn[_("<program>")] += 1
+            self._sect_results.append((_("<program>"), "warning"))
         else:
-            self._sect_err[_("<program>")] += 1
+            self._sect_results.append((_("<program>"), "error"))
 
     def execution_result(self, cmdline_args, execution_result):
         info = {
@@ -243,12 +252,12 @@ class TextFormatter(Formatter):
 
     def comparison_result(self, expected, got, diffs, matches):
         if max(diffs, default=0) == 0:
-            self._sect_ok[expected.tag] += 1
+            self._sect_results.append((expected.tag, "ok"))
             if self._test_status is None:
                 self._test_status = "ok"
             self.success("{}: {}".format(expected.tag, _("OK")))
         else:
-            self._sect_err[expected.tag] += 1
+            self._sect_results.append((expected.tag, "error"))
             self._test_status = "error"
             if len(expected.content) != len(got.content):
                 fmt = _("wrong number of lines (expected %d, got %d)")
@@ -303,7 +312,7 @@ class TextFormatter(Formatter):
     def missing_section(self, expected):
         if self._test_status is "ok" or self._test_status is None:
             self._test_status = "warning"
-        self._sect_warn[expected.tag] += 1
+        self._sect_results.append((expected.tag, "warning"))
         self.warning(expected.tag + ": " + _("missing section"))
 
 

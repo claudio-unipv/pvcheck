@@ -65,6 +65,9 @@ target/
 # Emacs
 *~
 
+# PyCharm
+.idea
+
 # C examples
 examples/program
 examples/program2
