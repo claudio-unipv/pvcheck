@@ -197,7 +197,7 @@ class TextFormatter(Formatter):
             row = ["{:{}}:".format(t, l)]
 
             row.append("%2d %s," % (self._count_results(t, "ok"), _("successes")))
-            row.append("%2d %s," % (self._count_results(t, "waring"), _("warnings")))
+            row.append("%2d %s," % (self._count_results(t, "warning"), _("warnings")))
             row.append("%2d %s" % (self._count_results(t, "error"), _("errors")))
             self.info("  ".join(row))
         self.info("")
