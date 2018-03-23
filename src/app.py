@@ -73,7 +73,7 @@ def _initialized_argparser():
                              const=4, default=4, type=check_int_greater_than_one)
     parser_run.add_argument("-v", "--verbosity", help=_("set the verbosity level, where the level must be an integer "
                             "between 0 (minimum) and 4 (maximum). The default value is 3."), nargs='?', const=3,
-                            default=3, type=int, choices=range(0, 4))
+                            default=3, type=int, choices=range(0, 5))
     parser_run.add_argument("-V", "--valgrind", help=_("use Valgrind (if installed) to check memory usage."),
                             action='store_true')
     parser_run.add_argument("-l", "--log", help=_("specify the name of the file used for logging.  The default is "
