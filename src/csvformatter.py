@@ -119,7 +119,10 @@ class CSVFormatter(formatter.Formatter):
         t["sections"] = self._sections
 
     def comparison_result(self, expected, got, diffs, matches):
-        percent_correct = '%.2f' % (((len(diffs) - sum(diffs)) * 100)/len(diffs))
+        if len(diffs) != 0:
+            percent_correct = '%.2f' % (((len(diffs) - sum(diffs)) * 100)/len(diffs))
+        else:
+            percent_correct = '100.00'
         s = OrderedDict([
             ("equality", percent_correct)
         ])
