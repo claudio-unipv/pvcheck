@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 import sys
+
+import interactiveformatter
 from argparser import ArgParser
 import os
 import math
@@ -32,7 +34,7 @@ def parse_options():
     config = args.config
     color = args.color
     color = (color == "YES" or (color == "AUTO" and sys.stdout.isatty()))
-    format = args.format
+    format = "interactive" if args.interactive else args.format
     logfile = args.log
     valgrind = args.valgrind
     run = args.test
@@ -83,6 +85,8 @@ def _initialized_argparser():
                             type=check_int_non_negative)
     parser_run.add_argument("-c", "--config", help=_("uses the specified configuration file."), nargs='?', const='',
                             default='')
+    parser_run.add_argument("-i", "--interactive", help=_("enables the interactive mode."), action="store_true")
+
 
     exclusive_run = parser_run.add_mutually_exclusive_group()
 
@@ -202,7 +206,9 @@ def main():
                 else executor.Executor)
     exe = execlass()
 
-    if opts["format"] == "json":
+    if opts["format"] == "interactive":
+        fmt = interactiveformatter.InteractiveFormatter()
+    elif opts["format"] == "json":
         fmt = jsonformatter.JSONFormatter(indent=4)
     elif opts["format"] == "csv":
         fmt = csvformatter.CSVFormatter()
