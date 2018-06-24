@@ -3,7 +3,18 @@
 import curses
 import threading
 import formatter
+import executor
 from i18n import translate as _
+
+
+# TODO: thread mutex
+# TODO: cmdline_args, input, tempfile in begin_test
+# TODO: help
+# TODO: summary
+# TODO: footer status
+# TODO: footer info
+# TODO: resize is not working properly?
+# TODO: i18n
 
 
 _CALLBACKS = {}
@@ -25,6 +36,22 @@ def _register_key(*keys):
 class InteractiveFormatter(formatter.Formatter):
     """Formatter that uses curses to report the result."""
 
+    FOOTER_H = 2  # height of the footer
+    MAX_W = 512   # max line length
+
+    COLOR_OK = 1
+    COLOR_WARN = 2
+    COLOR_ERR = 3
+
+    _RESULT_TABLE = {
+        executor.ER_OK: None,
+        executor.ER_TIMEOUT: _("TIMEOUT EXPIRED: PROCESS TERMINATED"),
+        executor.ER_OUTPUT_LIMIT: _("TOO MANY OUTPUT LINES"),
+        executor.ER_SEGFAULT: _("PROCESS ENDED WITH A FAILURE (SEGMENTATION FAULT)"),
+        executor.ER_ERROR: ("PROCESS ENDED WITH A FAILURE (ERROR CODE {status})"),
+        executor.ER_NOTFILE: _("FAILED TO RUN THE FILE '{progname}' the file does not exist)")
+    }
+
     def __init__(self):
         """Create the interactive formatter."""
         self._reports = []
@@ -35,6 +62,53 @@ class InteractiveFormatter(formatter.Formatter):
     def _quit(self):
         self._stop = True
 
+    @_register_key("p", "P", curses.KEY_UP)
+    def scroll_line_up(self):
+        self._reports[self._report_index].scroll(self._text_height(), -1)
+        self._update()
+
+    @_register_key("n", "N", curses.KEY_DOWN, 10)  # 10 -> ENTER
+    def scroll_line_down(self):
+        self._reports[self._report_index].scroll(self._text_height(), 1)
+        self._update()
+
+    @_register_key(curses.KEY_PPAGE)
+    def scroll_page_up(self):
+        self._reports[self._report_index].scroll(self._text_height(), pages=-1)
+        self._update()
+
+    @_register_key(curses.KEY_NPAGE)
+    def scroll_page_down(self):
+        self._reports[self._report_index].scroll(self._text_height(), pages=1)
+        self._update()
+
+    @_register_key(curses.KEY_HOME)
+    def scroll_begin(self):
+        self._reports[self._report_index].scroll(self._text_height(), documents=-1)
+        self._update()
+
+    @_register_key(curses.KEY_END)
+    def scroll_end(self):
+        self._reports[self._report_index].scroll(self._text_height(), documents=1)
+        self._update()
+
+    @_register_key("r", "R", curses.KEY_RESIZE)
+    def resize(self):
+        self._update()
+
+    @_register_key(curses.KEY_LEFT)
+    def previous_document(self):
+        self._screen.clear()
+        if len(self._reports) > 1:
+            self._report_index = max(self._report_index - 1, 1)
+        self._update()
+
+    @_register_key(curses.KEY_RIGHT)
+    def next_document(self):
+        self._screen.clear()
+        self._report_index = min(self._report_index + 1, len(self._reports) - 1)
+        self._update()
+
     def _thread_body(self):
         """UI thread."""
         self._stop = False
@@ -43,15 +117,44 @@ class InteractiveFormatter(formatter.Formatter):
     def _main_loop(self, screen):
         """Main loop managing the interaction with the user."""
         self._screen = screen
+        curses.init_pair(self.COLOR_OK, curses.COLOR_GREEN, 0)
+        curses.init_pair(self.COLOR_WARN, curses.COLOR_YELLOW, 0)
+        curses.init_pair(self.COLOR_ERR, curses.COLOR_RED, 0)
+        self._footer = curses.newwin(self.FOOTER_H, self._text_width(), self._text_height(), 0)
+        self._footer.bkgd(" ", curses.A_REVERSE)
+        self._reports.append(Report("PVCHECK", self.MAX_W))
+        self._reports[-1].add_line("Waiting for test results...")
+        self._report_index = 0
         self._update()
         while not self._stop:
             ch = screen.getch()
             _CALLBACKS.get(ch, lambda self: None)(self)
 
+    def _text_height(self):
+        """Number of text lines displayed."""
+        return self._screen.getmaxyx()[0] - self.FOOTER_H
+
+    def _text_width(self):
+        """Width of the displayed text."""
+        return min(self._screen.getmaxyx()[1], self.MAX_W)
+
     def _update(self):
         """Redraw everything."""
         self._screen.refresh()
-        self._screen.addstr("OK")  # !!!
+        height = self._text_height()
+        width = self._text_width()
+        self._footer.mvwin(height, 0)
+        doc = self._reports[self._report_index]
+        doc.refresh(height, width)
+        self._footer.clear()
+        info = _("Test case {} of {} ({})").format(self._report_index, len(self._reports) - 1, doc.title)
+        self._footer.addnstr(0, 0, info, width)
+        info = _("Lines {}-{}/{}").format(doc.top(), doc.bottom(height), doc.length())
+        self._footer.addnstr(0, max(0, width - len(info)), info, width)
+        # # self._footer.addstr(1, 0, self._message)
+        # info = "Test {}/{}".format(self._report_index, len(self._reports) - 1)
+        # self._footer.addstr(1, self._text_width() - len(info) - 1, info)
+        self._footer.refresh()
 
     def begin_session(self):
         # Start the UI thread
@@ -61,6 +164,61 @@ class InteractiveFormatter(formatter.Formatter):
     def end_session(self):
         # Wait the termination of the UI thread
         self._thread.join()
+
+    def begin_test(self, description, cmdline_args, input, tempfile):
+        description = description or ""
+        self._reports.append(Report(description, self.MAX_W))
+        if self._report_index == 0:
+            self._report_index = 1
+        self._update()
+
+    def end_test(self):
+        pass
+
+    def execution_result(self, cmdline_args, execution_result):
+        info = {
+            'progname': cmdline_args[0],
+            'status': execution_result.status
+        }
+        message = self._RESULT_TABLE[execution_result.result]
+        if message:
+            message = message.format(**info)
+            for line in message.splitlines():
+                self._reports[-1].add_line(line)
+        self._update()
+
+    def comparison_result(self, expected, got, diffs, matches):
+        add = self._reports[-1].add_line
+        all_ok = (max(diffs, default=0) <= 0)
+        tag_color = curses.color_pair(self.COLOR_OK if all_ok else self.COLOR_ERR)
+        match_color = curses.color_pair(self.COLOR_OK if all_ok else 0)
+        add("[%s]" % expected.tag, tag_color)
+
+        err_diff = _("%s\t\t(expected '%s')")
+        err_un = _("%s\t\t(this line was not expected)")
+        err_mis = _("\t\t(missing line '%s')")
+
+        for (i, d) in enumerate(diffs):
+            if d <= 0:
+                # Correct
+                add(got.content[i], match_color)
+            elif matches[i] is None:
+                # Extra line
+                add(err_un % got.content[i], curses.color_pair(self.COLOR_ERR))
+            elif i >= len(got.content):
+                # Missing line
+                add(err_mis % matches[i], curses.color_pair(self.COLOR_ERR))
+            else:
+                # Mismatching lines
+                add(err_diff % (got.content[i], matches[i]), curses.color_pair(self.COLOR_ERR))
+        add("")
+        self._update()
+
+    def missing_section(self, expected):
+        message = _("\t\t(section [%s] is missing)") % expected.tag
+        self._reports[-1].add_line(message, curses.color_pair(self.COLOR_WARN))
+        self._reports[-1].add_line("")
+        self._update()
 
 
 class Report:
@@ -77,10 +235,10 @@ class Report:
         self._pad = curses.newpad(1, max_width)
         self._position = 0
 
-    def add_line(self, line):
+    def add_line(self, line, *extra):
         """Add a line at the bottom of the document."""
         self._pad.resize(self._length + 1, self._max_width)
-        self._pad.addnstr(self._length, 0, line, self._max_width)
+        self._pad.addnstr(self._length, 0, line, self._max_width, *extra)
         self._length += 1
 
     def scroll(self, page_height, lines=0, pages=0, documents=0):
