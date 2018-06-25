@@ -15,6 +15,7 @@ used in the application, such as the help and the usage messages.
 """
 
 import os
+import sys
 import atexit
 
 
@@ -29,7 +30,7 @@ def translate(text):
     except KeyError:
         _missing_translation.add(text)
         s = (text if len (text) < 15 else text[:15] + "...")
-        print("[TT] Warning: missing translation for '%s'" % s)
+        print("[TT] Warning: missing translation for '%s'" % s, file=sys.stderr)
         return text
 
 
