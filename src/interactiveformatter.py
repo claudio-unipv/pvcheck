@@ -35,8 +35,8 @@ def _register_key(*keys):
 def _synchronized(f):
     @functools.wraps(f)
     def decorated(self, *args, **kwargs):
-        # with self._mutex:
-        return f(self, *args, **kwargs)
+        with self._mutex:
+            return f(self, *args, **kwargs)
     return decorated
 
 
@@ -199,7 +199,6 @@ class InteractiveFormatter(formatter.Formatter):
         self._add_footer(1, "right", text, curses.A_BOLD)
         self._footer.refresh()
 
-    @_synchronized
     def begin_session(self):
         self._err_count = self._warn_count = self._ok_count = 0
         self._running = True
@@ -207,11 +206,11 @@ class InteractiveFormatter(formatter.Formatter):
         self._thread = threading.Thread(target=self._thread_body)
         self._thread.start()
 
-    @_synchronized
     def end_session(self):
         # Wait the termination of the UI thread
-        self._running = False
-        self._update()
+        with self._mutex:
+            self._running = False
+            self._update()
         self._thread.join()
 
     @_synchronized
