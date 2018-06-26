@@ -140,8 +140,6 @@ class InteractiveFormatter(formatter.Formatter):
             ch = screen.getch()
             with self._mutex:
                 _CALLBACKS.get(ch, lambda self: None)(self)
-                with open("post.p", "a") as f:
-                    print("!!!!!!!!!!!!!!!!!!!", ch, chr(ch), file=f, flush=True)
 
     def _text_height(self):
         """Number of text lines displayed."""
@@ -205,6 +203,8 @@ class InteractiveFormatter(formatter.Formatter):
         # Start the UI thread
         self._thread = threading.Thread(target=self._thread_body)
         self._thread.start()
+        for _ in range(10 ** 7):
+            pass
 
     def end_session(self):
         # Wait the termination of the UI thread
