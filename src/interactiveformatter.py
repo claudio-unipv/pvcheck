@@ -1,4 +1,4 @@
-"""Classes that communicate the results."""
+"""Interactive interface."""
 
 import curses
 import threading
@@ -8,12 +8,12 @@ import functools
 from i18n import translate as _
 
 
-# TODO: thread mutex
-# TODO: cmdline_args, input, tempfile in begin_test
 # TODO: help page
 # TODO: summary page
 # TODO: test info page
+# TODO: cmdline_args, input, tempfile in begin_test
 # TODO: i18n
+# TODO: refactoring with additional UI class
 
 
 _CALLBACKS = {}
@@ -33,6 +33,7 @@ def _register_key(*keys):
 
 
 def _synchronized(f):
+    """Makes the calls to the method acquire a lock owned by the class instance."""
     @functools.wraps(f)
     def decorated(self, *args, **kwargs):
         with self._mutex:
@@ -65,6 +66,7 @@ class InteractiveFormatter(formatter.Formatter):
         self._report_index = 0
         self._screen = None
         self._mutex = threading.Lock()
+        self._initialization_barrier = None
 
     @_register_key("q", "Q", 27)  # 27 -> ESC
     def _quit(self):
@@ -101,41 +103,44 @@ class InteractiveFormatter(formatter.Formatter):
         self._update()
 
     @_register_key("r", "R", curses.KEY_RESIZE)
-    def resize(self):
+    def resize_terminal(self):
         self._update()
 
     @_register_key(curses.KEY_LEFT)
-    def previous_document(self):
+    def previous_report(self):
         self._screen.clear()
         if len(self._reports) > 1:
             self._report_index = max(self._report_index - 1, 1)
         self._update()
 
     @_register_key(curses.KEY_RIGHT)
-    def next_document(self):
+    def next_report(self):
         self._screen.clear()
         self._report_index = min(self._report_index + 1, len(self._reports) - 1)
         self._update()
 
     def _thread_body(self):
         """UI thread."""
-        self._stop = False
         curses.wrapper(self._main_loop)
 
     def _main_loop(self, screen):
         """Main loop managing the interaction with the user."""
-        with self._mutex:
-            self._screen = screen
-            curses.use_default_colors()
-            curses.init_pair(self.COLOR_OK, curses.COLOR_GREEN, -1)
-            curses.init_pair(self.COLOR_WARN, curses.COLOR_YELLOW, -1)
-            curses.init_pair(self.COLOR_ERR, curses.COLOR_RED, -1)
-            self._footer = curses.newwin(self.FOOTER_H, self._text_width(), self._text_height(), 0)
-            self._footer.bkgd(" ", curses.A_REVERSE)
-            self._reports.append(Report("PVCHECK", self.MAX_W))
-            self._reports[-1].add_line("Waiting for test results...")
-            self._report_index = 0
-            self._update()
+        # First setup curses
+        self._screen = screen
+        curses.use_default_colors()
+        curses.init_pair(self.COLOR_OK, curses.COLOR_GREEN, -1)
+        curses.init_pair(self.COLOR_WARN, curses.COLOR_YELLOW, -1)
+        curses.init_pair(self.COLOR_ERR, curses.COLOR_RED, -1)
+        self._footer = curses.newwin(self.FOOTER_H, self._text_width(), self._text_height(), 0)
+        self._footer.bkgd(" ", curses.A_REVERSE)
+        self._reports.append(Report("PVCHECK", self.MAX_W))
+        self._reports[-1].add_line("Waiting for test results...")
+        self._report_index = 0
+        self._update()
+        self._stop = False
+        # This reactivate the main thread
+        self._initialization_barrier.wait()
+        # Event loop
         while not self._stop:
             ch = screen.getch()
             with self._mutex:
@@ -150,11 +155,13 @@ class InteractiveFormatter(formatter.Formatter):
         return min(self._screen.getmaxyx()[1], self.MAX_W)
 
     def _add_footer(self, line, align, text, *extra):
+        """Add some text in the footer."""
         k = self._text_width() - 1 - len(text)
         pos = max(0, (0 if align == "left" else (k if align == "right" else k //2 )))
         self._footer.addnstr(line, pos, text, self._text_width() - 1 - pos, *extra)
 
     def _add_short_report(self):
+        """Insert ok, warnings, errors counters in the footer."""
         texts = [
             "%3d " % self._ok_count, _(" passes, "),
             "%3d " % self._warn_count, _(" warnings, "),
@@ -186,7 +193,7 @@ class InteractiveFormatter(formatter.Formatter):
         self._add_footer(0, "center", _("[Press 'h' for help]"), curses.A_DIM)
         text = _("Test case %d of %d (%s) ") % (self._report_index, len(self._reports) - 1, doc.title)
         self._add_footer(0, "left", text)
-        text = _("Lines {%d}-{%d}/{%d}") % (doc.top(), doc.bottom(height), doc.length())
+        text = _("Lines %d-%d/%d") % (doc.top(), doc.bottom(height), doc.length())
         self._add_footer(0, "right", text)
         self._add_short_report()
         if self._running:
@@ -197,14 +204,16 @@ class InteractiveFormatter(formatter.Formatter):
         self._add_footer(1, "right", text, curses.A_BOLD)
         self._footer.refresh()
 
+    # -- Formatter interface --------------------------------------------------
+        
     def begin_session(self):
         self._err_count = self._warn_count = self._ok_count = 0
         self._running = True
         # Start the UI thread
+        self._initialization_barrier = threading.Barrier(2)
         self._thread = threading.Thread(target=self._thread_body)
         self._thread.start()
-        for _ in range(10 ** 7):
-            pass
+        self._initialization_barrier.wait()
 
     def end_session(self):
         # Wait the termination of the UI thread
