@@ -71,8 +71,8 @@ class TestCase:
 
         """
         if exclude_special:
-            return [s for s in self._sections.values()
-                    if not s.tag.startswith(".")]
+            return [s for s in self._sections.values() if s.tag and not
+                    s.tag.startswith(".")]
         else:
             return list(self._sections.values())
 
