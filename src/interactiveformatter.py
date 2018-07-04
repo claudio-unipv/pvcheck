@@ -148,7 +148,7 @@ class InteractiveFormatter(formatter.Formatter):
         self._mutex = threading.Lock()
         self._initialization_barrier = None
         self._sections = []
-        self._error_counts = {}
+        self._err_counts = {}
         self._warn_counts = {}
         self._ok_counts = {}
         self._error_count = 0
@@ -236,7 +236,7 @@ class InteractiveFormatter(formatter.Formatter):
         doc = self._reports[self._report_index]
         text = [_("SUMMARY:"), ""]
         for s in self._sections:
-            line = "%20s %3d ok  %3d warnings  %3d errors" % (s, self._ok_counts[s], self._warn_counts[s], self._error_counts[s])
+            line = "%20s %3d ok  %3d warnings  %3d errors" % (s, self._ok_counts[s], self._warn_counts[s], self._err_counts[s])
             text.append(line)
         text.append(" ")
         self._show_info("\n".join(text))
@@ -405,7 +405,7 @@ class InteractiveFormatter(formatter.Formatter):
     def _new_section(self, section_name):
         if section_name not in self._sections:
             self._sections.append(section_name)
-            self._error_counts[section_name] = 0
+            self._err_counts[section_name] = 0
             self._warn_counts[section_name] = 0
             self._ok_counts[section_name] = 0
 
