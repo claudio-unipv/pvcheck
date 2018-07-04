@@ -35,6 +35,18 @@ def translate(text):
 
 
 ############################################################
+# Extra functions
+############################################################
+
+def register_translation(english_text, language, translation):
+    """Function to add translations from other modules."""
+    if _lang == language:
+        _strings[english_text] = translation
+    elif _lang == "en":
+        _strings[english_text] = english_text
+
+
+############################################################
 # Application messages
 ############################################################
 

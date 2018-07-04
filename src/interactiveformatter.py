@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """Interactive interface."""
 
 import curses
@@ -5,15 +7,93 @@ import threading
 import formatter
 import executor
 import functools
-from i18n import translate as _
+import i18n
+
+_ = i18n.translate
 
 
-# TODO: help page
-# TODO: summary page
-# TODO: test info page
-# TODO: cmdline_args, input, tempfile in begin_test
 # TODO: i18n
-# TODO: refactoring with additional UI class
+# TODO: refactoring with Formatter + separate UI class
+
+
+HELP_MESSAGE = """
+
+PVCHECK automatic verification of computer programs
+===================================================
+
+
+Keybord controls:
+
+  RIGHT    switch to the next test in the suite
+  
+  LEFT     switch to the previous test in the suite
+
+  DOWN, n  scroll one line down
+
+  UP, p    scroll one line up
+
+  PgDN     scroll one page down
+  
+  PgUP     scroll one page up
+  
+  HOME     scroll to the beginning
+  
+  END      scroll to the end
+  
+  r        redraw the screen
+  
+  q, ESC   close the program
+  
+  s        show a summary of the results
+  
+  i        show info about the test case
+  
+  o        show the program's output
+  
+  h, ?     show this page  
+
+"""
+
+HELP_MESSAGE_IT = """
+
+PVCHECK verifica automatica di programmi 
+===================================================
+
+
+Controlli tramite tastiera
+
+  DESTRA   passa al test successivo nella suite
+
+  SINISTRA passa al test precedente nella suite
+
+  GIU`, n  scorre una riga in giu`
+
+  SU, p    scorre una riga in su
+
+  PgDN     scorre una pagina in giu`
+
+  PgUP     scorre una pagina in su
+
+  HOME     scorre all'inizio
+
+  END      scorre alla fine
+
+  r        ridisegna lo schermo
+
+  q, ESC   chiude il programma
+  
+  s        mostra un riepilogo dei risultati
+  
+  i        mostra informazioni sul caso di test
+  
+  o        mostra l'output del programma
+
+  h, ?     mostra questa pagina
+
+"""
+
+
+i18n.register_translation(HELP_MESSAGE, "it", HELP_MESSAGE_IT)
 
 
 _CALLBACKS = {}
@@ -67,6 +147,13 @@ class InteractiveFormatter(formatter.Formatter):
         self._screen = None
         self._mutex = threading.Lock()
         self._initialization_barrier = None
+        self._sections = []
+        self._error_counts = {}
+        self._warn_counts = {}
+        self._ok_counts = {}
+        self._error_count = 0
+        self._warn_count = 0
+        self._ok_count = 0
 
     @_register_key("q", "Q", 27)  # 27 -> ESC
     def _quit(self):
@@ -117,6 +204,43 @@ class InteractiveFormatter(formatter.Formatter):
     def next_report(self):
         self._screen.clear()
         self._report_index = min(self._report_index + 1, len(self._reports) - 1)
+        self._update()
+
+    @_register_key("h", "H", "?")
+    def next_report(self):
+        self._screen.clear()
+        self._show_info(_(HELP_MESSAGE))
+        self._screen.clear()
+        self._update()
+
+    @_register_key("i", "I")
+    def next_report(self):
+        self._screen.clear()
+        doc = self._reports[self._report_index]
+        self._show_info(doc.info())
+        self._screen.clear()
+        self._update()
+
+    @_register_key("o", "O")
+    def next_report(self):
+        self._screen.clear()
+        doc = self._reports[self._report_index]
+        text = _("PROGRAM'S OUTPUT:")
+        self._show_info(text + "\n" + doc.output)
+        self._screen.clear()
+        self._update()
+
+    @_register_key("s", "S")
+    def next_report(self):
+        self._screen.clear()
+        doc = self._reports[self._report_index]
+        text = [_("SUMMARY:"), ""]
+        for s in self._sections:
+            line = "%20s %3d ok  %3d warnings  %3d errors" % (s, self._ok_counts[s], self._warn_counts[s], self._error_counts[s])
+            text.append(line)
+        text.append(" ")
+        self._show_info("\n".join(text))
+        self._screen.clear()
         self._update()
 
     def _thread_body(self):
@@ -204,6 +328,35 @@ class InteractiveFormatter(formatter.Formatter):
         self._add_footer(1, "right", text, curses.A_BOLD)
         self._footer.refresh()
 
+    def _show_info(self, text):
+        """Show some text on the screen temporarily disabling the main interface."""
+        self._screen.refresh()
+        lines = text.splitlines()
+        content_pad = curses.newpad(len(lines), 1 + max(map(len, lines)))
+        for n, line in enumerate(lines):
+            content_pad.addstr(n, 0, line)
+        start_line = 0
+        while True:
+            height, width = self._screen.getmaxyx()
+            start_line = max(0, start_line)
+            start_line = min(len(lines) - height, start_line)
+            content_pad.refresh(start_line, 0, 0, 0, height - 1, width - 1)
+            ch = self._screen.getch()
+            if ch in (curses.KEY_DOWN, ord("n"), ord("N")):
+                start_line += 1
+            elif ch in (curses.KEY_UP, ord("p"), ord("P")):
+                start_line -= 1
+            elif ch == curses.KEY_NPAGE:
+                start_line += height
+            elif ch == curses.KEY_PPAGE:
+                start_line -= height
+            elif ch == curses.KEY_END:
+                start_line += len(lines)
+            elif ch == curses.KEY_HOME:
+                start_line = 0
+            else:
+                break
+
     # -- Formatter interface --------------------------------------------------
         
     def begin_session(self):
@@ -225,7 +378,7 @@ class InteractiveFormatter(formatter.Formatter):
     @_synchronized
     def begin_test(self, description, cmdline_args, input, tempfile):
         description = description or ""
-        self._reports.append(Report(description, self.MAX_W))
+        self._reports.append(Report(description, self.MAX_W, cmdline_args, input, tempfile))
         if self._report_index == 0:
             self._report_index = 1
         self._update()
@@ -246,16 +399,27 @@ class InteractiveFormatter(formatter.Formatter):
             message = message.format(**info)
             for line in message.splitlines():
                 self._reports[-1].add_line(line, curses.color_pair(self.COLOR_ERR))
+        self._reports[-1].output = execution_result.output
         self._update()
+
+    def _new_section(self, section_name):
+        if section_name not in self._sections:
+            self._sections.append(section_name)
+            self._error_counts[section_name] = 0
+            self._warn_counts[section_name] = 0
+            self._ok_counts[section_name] = 0
 
     @_synchronized
     def comparison_result(self, expected, got, diffs, matches):
         add = self._reports[-1].add_line
         all_ok = (max(diffs, default=0) <= 0)
+        self._new_section(expected.tag)
         if all_ok:
             self._ok_count += 1
+            self._ok_counts[expected.tag] += 1
         else:
             self._err_count += 1
+            self._err_counts[expected.tag] += 1
         color = curses.color_pair(self.COLOR_OK if all_ok else self.COLOR_ERR)
         add("[%s]" % expected.tag, color | curses.A_BOLD)
 
@@ -281,7 +445,9 @@ class InteractiveFormatter(formatter.Formatter):
 
     @_synchronized
     def missing_section(self, expected):
+        self._new_section(expected.tag)
         self._warn_count += 1
+        self._warn_counts[expected.tag] += 1
         message = _("\t\t(section [%s] is missing)") % expected.tag
         self._reports[-1].add_line(message, curses.color_pair(self.COLOR_WARN))
         self._reports[-1].add_line("")
@@ -291,7 +457,7 @@ class InteractiveFormatter(formatter.Formatter):
 class Report:
     """Test result displayed on the screen."""
 
-    def __init__(self, title, max_width):
+    def __init__(self, title, max_width, cmdline_args="", input="", tempfile=""):
         """Create a new report with the given title.
 
         Lines are truncated to max_width.
@@ -301,6 +467,10 @@ class Report:
         self._max_width = max_width
         self._pad = curses.newpad(1, max_width)
         self._position = 0
+        self._cmdline_args = cmdline_args
+        self._input = input
+        self._tempfile = tempfile
+        self.output = ""
 
     def add_line(self, line, *extra):
         """Add a line at the bottom of the document."""
@@ -328,3 +498,18 @@ class Report:
     def length(self):
         """Number of lines in the document."""
         return self._length
+
+    def info(self):
+        lines = [_("Test title: %s") % self.title]
+        # , "", _("Command line: %s") % " ".join(self._cmdline_args)]
+        if self._cmdline_args:
+            lines.append("")
+            args = [_("TEMP_FILE") if x is executor.ARG_TMPFILE else x for x in self._cmdline_args]
+            lines.append(_("Command line: %s") % " ".join(args))
+        if self._input and self._input.strip():
+            lines.extend(["", _("Input:")])
+            lines.extend(self._input.splitlines())
+        if self._tempfile:
+            lines.extend(["", _("Temporary file:")])
+            lines.extend(self._tempfile.splitlines())
+        return "\n".join(lines)
