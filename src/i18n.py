@@ -150,6 +150,24 @@ invalid %s value: %r $ non valido %s valore: %r
 invalid choice: %r (choose from %s) $ scelta non valida: %r (i parametri disponibili sono %s)
 %s: error: %s $ %s: errore: %s
 unrecognized arguments: %s $ argomento non riconosciuto: %s
+Command line: %s $ Riga di comando: %s
+FAILED TO RUN THE FILE '{progname}' the file does not exist) $ ERRORE NELL'ESECUZIONE DEL FILE '{progname}' il file non esiste)
+Lines %d-%d/%d $ Righe %d-%d/%d
+PROCESS ENDED WITH A FAILURE (SEGMENTATION FAULT) $ IL PROCESSO E` TERMINATO CON UN FALLIMENTO (SEGMENTATION FAULT)
+PROGRAM'S OUTPUT: $ OUTPUT DEL PROGRAMMA:
+SUMMARY: $ SOMMARIO:
+TEMP_FILE $ FILE_TEMPORANEO
+Temporary file: $ File temporaneo:
+Test case %d of %d (%s) $ Caso di test %d di %d (%s) 
+Test title: %s $ Titolo del test: %s
+[Press 'h' for help] $ [Premere 'h' per l'aiuto]
+enables the interactive mode. $ abilita la modalita` interattiva.
+expected $ atteso
+missing line $ riga mancante
+passes $ passati
+this line was not expected $ questa riga e` inattesa
+TEST RUNNING $ TEST IN ESECUZIONE
+TEST COMPLETED $ TEST TERMINATO
 """
 
 _translations = {

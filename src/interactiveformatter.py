@@ -287,9 +287,9 @@ class InteractiveFormatter(formatter.Formatter):
     def _add_short_report(self):
         """Insert ok, warnings, errors counters in the footer."""
         texts = [
-            "%3d " % self._ok_count, _(" passes, "),
-            "%3d " % self._warn_count, _(" warnings, "),
-            "%3d " % self._err_count, _(" errors")
+            "%3d " % self._ok_count, " %s, " % _("passes"),
+            "%3d " % self._warn_count, " %s, " % _("warnings"),
+            "%3d " % self._err_count, " %s" % _("errors")
         ]
         styles = [
             [curses.color_pair(self.COLOR_OK)], [],
@@ -315,16 +315,16 @@ class InteractiveFormatter(formatter.Formatter):
         doc.refresh(self._text_height(), self._text_width())
         self._footer.clear()
         self._add_footer(0, "center", _("[Press 'h' for help]"), curses.A_DIM)
-        text = _("Test case %d of %d (%s) ") % (self._report_index, len(self._reports) - 1, doc.title)
+        text = _("Test case %d of %d (%s)") % (self._report_index, len(self._reports) - 1, doc.title) + " "
         self._add_footer(0, "left", text)
         text = _("Lines %d-%d/%d") % (doc.top(), doc.bottom(height), doc.length())
         self._add_footer(0, "right", text)
         self._add_short_report()
         if self._running:
             tot = self._err_count + self._warn_count + self._ok_count
-            text = "TEST RUNNING..." + "|/-\\"[tot % 4]
+            text = _("TEST RUNNING") + "..." + "|/-\\"[tot % 4]
         else:
-            text = "TEST COMPLETED"
+            text = _("TEST COMPLETED")
         self._add_footer(1, "right", text, curses.A_BOLD)
         self._footer.refresh()
 
@@ -423,9 +423,9 @@ class InteractiveFormatter(formatter.Formatter):
         color = curses.color_pair(self.COLOR_OK if all_ok else self.COLOR_ERR)
         add("[%s]" % expected.tag, color | curses.A_BOLD)
 
-        err_diff = _("%s\t\t(expected '%s')")
-        err_un = _("%s\t\t(this line was not expected)")
-        err_mis = _("\t\t(missing line '%s')")
+        err_diff = "%s\t\t(" +_("expected") + " '%s')"
+        err_un = "%s\t\t(" + _("this line was not expected") + ")"
+        err_mis = "\t\t(" + _("missing line") + " '%s'"
 
         for (i, d) in enumerate(diffs):
             if d <= 0:
@@ -448,7 +448,7 @@ class InteractiveFormatter(formatter.Formatter):
         self._new_section(expected.tag)
         self._warn_count += 1
         self._warn_counts[expected.tag] += 1
-        message = _("\t\t(section [%s] is missing)") % expected.tag
+        message = ("\t\t(" + _("section [%s] is missing") + ")") % expected.tag
         self._reports[-1].add_line(message, curses.color_pair(self.COLOR_WARN))
         self._reports[-1].add_line("")
         self._update()
