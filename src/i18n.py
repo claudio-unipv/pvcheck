@@ -168,6 +168,7 @@ passes $ passati
 this line was not expected $ questa riga e` inattesa
 TEST RUNNING $ TEST IN ESECUZIONE
 TEST COMPLETED $ TEST TERMINATO
+section [%s] is missing $ sezione [%s] non trovata
 """
 
 _translations = {
