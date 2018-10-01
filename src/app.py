@@ -2,7 +2,6 @@
 import argparse
 import sys
 
-import interactiveformatter
 from argparser import ArgParser
 import os
 import math
@@ -13,6 +12,7 @@ import formatter
 import jsonformatter
 import csvformatter
 import htmlformatter
+import interactiveformatter
 import executor
 import valgrind
 import i18n
@@ -34,7 +34,7 @@ def parse_options():
     config = args.config
     color = args.color
     color = (color == "YES" or (color == "AUTO" and sys.stdout.isatty()))
-    format = "interactive" if args.interactive else args.format
+    format = args.format
     logfile = args.log
     valgrind = args.valgrind
     run = args.test
@@ -61,38 +61,33 @@ def _initialized_argparser():
 
     # create the parser for the "run" command
     parser_run = subparsers.add_parser('run', help=_('test a program.'))
+    a = parser_run.add_argument
+    a("program", help=_("program to be tested."))
+    a("program_arguments", help=_("any arguments of the program to be tested."), nargs='*')
 
-    parser_run.add_argument("program", help=_("program to be tested."))
-    parser_run.add_argument("program_arguments", help=_("any arguments of the program to be tested."), nargs='*')
-
-    parser_run.add_argument("-f", "--file", help=_("file containing the tests to be performed (default pvcheck.test).")
+    a("-f", "--file", help=_("file containing the tests to be performed (default pvcheck.test).")
                             , default="pvcheck.test")
-    parser_run.add_argument("-T", "--test", help=_("run only the selected test."), nargs="?", type=int)
-    parser_run.add_argument("-t", "--timeout", help=_("set how many seconds it should be waited for the termination "
+    a("-T", "--test", help=_("run only the selected test."), nargs="?", type=int)
+    a("-t", "--timeout", help=_("set how many seconds it should be waited for the termination "
                             "of the program.  The default is 10 seconds."), nargs='?', const=10, default=10,
                             type=check_float_non_negative)
-    parser_run.add_argument("-e", "--errors", help=_("reports up to N errors per section (default 4)."), nargs='?',
+    a("-e", "--errors", help=_("reports up to N errors per section (default 4)."), nargs='?',
                              const=4, default=4, type=check_int_greater_than_one)
-    parser_run.add_argument("-v", "--verbosity", help=_("set the verbosity level, where the level must be an integer "
+    a("-v", "--verbosity", help=_("set the verbosity level, where the level must be an integer "
                             "between 0 (minimum) and 4 (maximum). The default value is 3."), nargs='?', const=3,
                             default=3, type=int, choices=range(0, 5))
-    parser_run.add_argument("-V", "--valgrind", help=_("use Valgrind (if installed) to check memory usage."),
+    a("-V", "--valgrind", help=_("use Valgrind (if installed) to check memory usage."),
                             action='store_true')
-    parser_run.add_argument("-l", "--log", help=_("specify the name of the file used for logging.  The default is "
+    a("-l", "--log", help=_("specify the name of the file used for logging.  The default is "
                             "~/.pvcheck.log."), nargs='?', const=_DEFAULT_LOG_FILE, default=_DEFAULT_LOG_FILE)
-    parser_run.add_argument("-L", "--output_limit", help=_("cut the output of the program to a maximum of L lines.  "
+    a("-L", "--output_limit", help=_("cut the output of the program to a maximum of L lines.  "
                             "The default is 10000."), nargs='?', const=10000, default=10000,
                             type=check_int_non_negative)
-    parser_run.add_argument("-c", "--config", help=_("uses the specified configuration file."), nargs='?', const='',
+    a("-c", "--config", help=_("uses the specified configuration file."), nargs='?', const='',
                             default='')
-    parser_run.add_argument("-i", "--interactive", help=_("enables the interactive mode."), action="store_true")
-
-
-    exclusive_run = parser_run.add_mutually_exclusive_group()
-
-    exclusive_run.add_argument("-F", "--format", help=_("select the output type."), nargs='?', const='resume',
-                               default='resume', choices=('json', 'csv', 'html'))
-    exclusive_run.add_argument("-C", "--color", help=_("enable or disable colored output (default AUTO)."), nargs='?',
+    a("-F", "--format", help=_("select the output type."), default='interactive',
+      choices=('interactive', 'text', 'json', 'csv', 'html'))
+    a("-C", "--color", help=_("enable or disable colored output (default AUTO)."), nargs='?',
                                const='AUTO', default='AUTO', choices=('YES', 'NO', 'AUTO'))
 
     parser_run.set_defaults(test_number=None, info=False)
@@ -102,7 +97,7 @@ def _initialized_argparser():
 
     parser_info.add_argument("file", help=_("file containing the tests to be performed."))
     parser_info.set_defaults(config='', timeout=10, verbosity=3, errors=4, color='AUTO', valgrind=False,
-                             format='resume', log=_DEFAULT_LOG_FILE, test=None, program=None, program_arguments=None,
+                             format='text', log=_DEFAULT_LOG_FILE, test=None, program=None, program_arguments=None,
                              test_number=None, info=True, output_limit=10000)
 
     # create the parser for the "export" command
@@ -111,7 +106,7 @@ def _initialized_argparser():
     parser_export.add_argument("test_number", type=int)
     parser_export.add_argument("file", help=_("file containing the tests to be performed."))
     parser_export.set_defaults(config='', timeout=10, verbosity=3, errors=4, color='AUTO', valgrind=False,
-                               format='resume', log=_DEFAULT_LOG_FILE, test=None, program=None, program_arguments=None,
+                               format='text', log=_DEFAULT_LOG_FILE, test=None, program=None, program_arguments=None,
                                info=False, output_limit=10000)
 
     return argparser
@@ -214,12 +209,13 @@ def main():
         fmt = csvformatter.CSVFormatter()
     elif opts["format"] == "html":
         fmt = htmlformatter.HTMLFormatter()
-    else:
+    elif opts["format"] == "text":
         fmtclass = (formatter.ColoredTextFormatter if opts["color"]
                     else formatter.TextFormatter)
         fmt = fmtclass(verbosity=opts["verbosity"],
                        maxerrors=opts["maxerrors"])
-
+    else:
+        raise ValueError("Unknown format '{}'".format(opts["format"]))
     # Pvcheck returns as exit code the number of failed tests.
     # 255 represents a generic error.
     retcode = 255
