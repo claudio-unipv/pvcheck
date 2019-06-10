@@ -225,17 +225,22 @@ def main():
         logfmt = jsonformatter.JSONFormatter(logfile)
         combfmt = formatter.CombinedFormatter([fmt, logfmt])
         pvc = pvcheck.PvCheck(exe, combfmt)
-        if single_test_index is None:
-            failures = pvc.exec_suite(suite, program,
-                                      timeout=opts["timeout"],
-                                      output_limit=opts["output_limit"])
-        else:
-            failures = pvc.exec_single_test(suite, program,
-                                            timeout=opts["timeout"],
-                                            output_limit=opts["output_limit"])
-        retcode = min(failures, 254)
-        logfile.write("\n")
+        try:
+            if single_test_index is None:
+                failures = pvc.exec_suite(suite, program,
+                                          timeout=opts["timeout"],
+                                          output_limit=opts["output_limit"])
+            else:
+                failures = pvc.exec_single_test(suite, program,
+                                                timeout=opts["timeout"],
+                                                output_limit=opts["output_limit"])
+            retcode = min(failures, 254)
+        finally:
+            # in case of exception (e.g. tested a non executable file) write a
+            # newline to the json log
+            logfile.write("\n")
     sys.exit(retcode)
+
 
 if __name__ == "__main__":
     main()
