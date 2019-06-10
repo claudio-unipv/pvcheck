@@ -1,5 +1,5 @@
-"""Formatter producing JSON data.""" 
-
+"""Formatter producing JSON data."""
+import os
 import sys
 import json
 import datetime
@@ -9,7 +9,7 @@ import formatter
 import executor
 
 
-JSON_FORMAT_VER = "2.0.1"
+JSON_FORMAT_VER = "2.1.0"
 
 
 # TO BE DEFINED
@@ -31,11 +31,17 @@ class JSONFormatter(formatter.Formatter):
         "FAILED TO RUN THE FILE '{progname}' (the file does not exist)"
     }
 
-    def __init__(self, destination=sys.stdout, indent=None):
+    def __init__(self, destination=sys.stdout, indent=None, test_file=None):
         self._dest = destination
         self._indent = indent
         self._obj = None
-        self._tests = []        
+        self._tests = []
+        self._work_dir = os.getcwd()
+        self._test_file = self._work_dir
+        if test_file is not None:
+            self._test_file += "/" + test_file
+        else:
+            self._test_file += "/pvcheck.test"
 
     def _now(self):
         now = datetime.datetime.now()
@@ -52,6 +58,8 @@ class JSONFormatter(formatter.Formatter):
         self._obj = OrderedDict([
             ("created_at", self._now()),
             ("version", JSON_FORMAT_VER),
+            ("working_directory", self._work_dir),
+            ("test_file", self._test_file),
             ("tests", self._tests)
         ])
 
