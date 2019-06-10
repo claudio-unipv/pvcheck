@@ -203,7 +203,7 @@ def main():
     exe = execlass()
 
     if opts["format"] == "json":
-        fmt = jsonformatter.JSONFormatter(indent=4)
+        fmt = jsonformatter.JSONFormatter(indent=4, test_file=args["test_file"])
     elif opts["format"] == "csv":
         fmt = csvformatter.CSVFormatter()
     elif opts["format"] == "html":
@@ -222,7 +222,8 @@ def main():
         program.extend(args['program_arguments'])
 
     with open(opts["logfile"], "at") as logfile:
-        logfmt = jsonformatter.JSONFormatter(logfile)
+        logfmt = jsonformatter.JSONFormatter(logfile,
+                                             test_file=args["test_file"])
         combfmt = formatter.CombinedFormatter([fmt, logfmt])
         pvc = pvcheck.PvCheck(exe, combfmt)
         try:
