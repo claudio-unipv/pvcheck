@@ -1,5 +1,5 @@
-"""Formatter producing JSON data.""" 
-
+"""Formatter producing JSON data."""
+import os
 import sys
 import json
 import datetime
@@ -35,7 +35,8 @@ class JSONFormatter(formatter.Formatter):
         self._dest = destination
         self._indent = indent
         self._obj = None
-        self._tests = []        
+        self._tests = []
+        self._work_dir = os.getcwd()
 
     def _now(self):
         now = datetime.datetime.now()
@@ -52,6 +53,7 @@ class JSONFormatter(formatter.Formatter):
         self._obj = OrderedDict([
             ("created_at", self._now()),
             ("version", JSON_FORMAT_VER),
+            ("working_directory", self._work_dir),
             ("tests", self._tests)
         ])
 
