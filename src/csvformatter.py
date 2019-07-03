@@ -44,10 +44,7 @@ class CSVFormatter(formatter.Formatter):
         If there is only a test omits the header 'TEST'.
 
         """
-        if len(self._tests) > 1:
-            header = ["TEST"]
-        else:
-            header = []
+        header = ["TEST"]
         header.append(_("CODE"))
         for test in self._tests:
             section_names = list(test["sections"].keys())
@@ -62,10 +59,7 @@ class CSVFormatter(formatter.Formatter):
         If there is only a test omits the test's name.
 
         """
-        if len(self._tests) > 1:
-            row = [test["title"]]
-        else:
-            row = []
+        row = [test["title"]]
         for element in header:
             if element == _("CODE"):
                 row.append(test["status"])
