@@ -89,9 +89,11 @@ class CSVFormatter(formatter.Formatter):
                         else:
                             values.append(0)
                     except KeyError:
-                        values.append(0)
+                        values.append(None)
                 try:
-                    row.append('%.2f' % (sum(values)/len(values)))
+                    # takes into account the sections that actually exist
+                    values_2 = [v for v in values if v is not None]
+                    row.append('%.2f' % (sum(values_2)/len(values_2)))
                 except ZeroDivisionError:
                     row.append('%.2f' % 0)
         return row
