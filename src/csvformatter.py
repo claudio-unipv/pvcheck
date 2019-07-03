@@ -105,8 +105,7 @@ class CSVFormatter(formatter.Formatter):
         for test in self._tests:
             row = self._row_builder(test, header)
             fp.writerow(row)
-        if len(self._tests) > 1:
-            fp.writerow(self._statistics_row_builder(header))
+        fp.writerow(self._statistics_row_builder(header))
 
     def begin_test(self, description, cmdline_args, input, tempfile):
         t = OrderedDict([
