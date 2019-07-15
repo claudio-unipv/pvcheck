@@ -204,7 +204,7 @@ def main():
     if opts["format"] == "interactive":
         fmt = interactiveformatter.InteractiveFormatter()
     elif opts["format"] == "json":
-        fmt = jsonformatter.JSONFormatter(indent=4)
+        fmt = jsonformatter.JSONFormatter(indent=4, test_file=args["test_file"])
     elif opts["format"] == "csv":
         fmt = csvformatter.CSVFormatter()
     elif opts["format"] == "html":
@@ -224,20 +224,26 @@ def main():
         program.extend(args['program_arguments'])
 
     with open(opts["logfile"], "at") as logfile:
-        logfmt = jsonformatter.JSONFormatter(logfile)
+        logfmt = jsonformatter.JSONFormatter(logfile,
+                                             test_file=args["test_file"])
         combfmt = formatter.CombinedFormatter([fmt, logfmt])
         pvc = pvcheck.PvCheck(exe, combfmt)
-        if single_test_index is None:
-            failures = pvc.exec_suite(suite, program,
-                                      timeout=opts["timeout"],
-                                      output_limit=opts["output_limit"])
-        else:
-            failures = pvc.exec_single_test(suite, program,
-                                            timeout=opts["timeout"],
-                                            output_limit=opts["output_limit"])
-        retcode = min(failures, 254)
-        logfile.write("\n")
+        try:
+            if single_test_index is None:
+                failures = pvc.exec_suite(suite, program,
+                                          timeout=opts["timeout"],
+                                          output_limit=opts["output_limit"])
+            else:
+                failures = pvc.exec_single_test(suite, program,
+                                                timeout=opts["timeout"],
+                                                output_limit=opts["output_limit"])
+            retcode = min(failures, 254)
+        finally:
+            # in case of exception (e.g. tested a non executable file) write a
+            # newline to the json log
+            logfile.write("\n")
     sys.exit(retcode)
+
 
 if __name__ == "__main__":
     main()

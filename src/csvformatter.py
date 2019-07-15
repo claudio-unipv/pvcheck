@@ -44,10 +44,7 @@ class CSVFormatter(formatter.Formatter):
         If there is only a test omits the header 'TEST'.
 
         """
-        if len(self._tests) > 1:
-            header = ["TEST"]
-        else:
-            header = []
+        header = ["TEST"]
         header.append(_("CODE"))
         for test in self._tests:
             section_names = list(test["sections"].keys())
@@ -62,10 +59,7 @@ class CSVFormatter(formatter.Formatter):
         If there is only a test omits the test's name.
 
         """
-        if len(self._tests) > 1:
-            row = [test["title"]]
-        else:
-            row = []
+        row = [test["title"]]
         for element in header:
             if element == _("CODE"):
                 row.append(test["status"])
@@ -89,9 +83,11 @@ class CSVFormatter(formatter.Formatter):
                         else:
                             values.append(0)
                     except KeyError:
-                        values.append(0)
+                        values.append(None)
                 try:
-                    row.append('%.2f' % (sum(values)/len(values)))
+                    # takes into account the sections that actually exist
+                    values_2 = [v for v in values if v is not None]
+                    row.append('%.2f' % (sum(values_2)/len(values_2)))
                 except ZeroDivisionError:
                     row.append('%.2f' % 0)
         return row
@@ -103,8 +99,7 @@ class CSVFormatter(formatter.Formatter):
         for test in self._tests:
             row = self._row_builder(test, header)
             fp.writerow(row)
-        if len(self._tests) > 1:
-            fp.writerow(self._statistics_row_builder(header))
+        fp.writerow(self._statistics_row_builder(header))
 
     def begin_test(self, description, cmdline_args, input, tempfile):
         t = OrderedDict([
