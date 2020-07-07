@@ -77,7 +77,7 @@ class JSONFormatter(formatter.Formatter):
         ])
         self._tests.append(t)
 
-    def execution_result(self, cmdline_args, execution_result):
+    def execution_result(self, cmdline_args, execution_result, test):
         t = self._tests[-1]
         info = {
             "progname": cmdline_args[0],

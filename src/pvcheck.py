@@ -69,7 +69,7 @@ class PvCheck:
             timeout=timeout,
             output_limit=output_limit
         )
-        self._fmt.execution_result(args, exec_result)
+        self._fmt.execution_result(args, exec_result, test)
         if exec_result.result == executor.ER_OK:
             return self._check_output(test, exec_result.output)
         else:

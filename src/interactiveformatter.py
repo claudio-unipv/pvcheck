@@ -388,7 +388,7 @@ class InteractiveFormatter(formatter.Formatter):
         pass
 
     @_synchronized
-    def execution_result(self, cmdline_args, execution_result):
+    def execution_result(self, cmdline_args, execution_result, test):
         info = {
             'progname': cmdline_args[0],
             'status': execution_result.status
