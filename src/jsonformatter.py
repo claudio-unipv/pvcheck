@@ -88,6 +88,11 @@ class JSONFormatter(formatter.Formatter):
         t["error_message"] = msg.format(**info)
         t["output"] = execution_result.output
         self._sections = OrderedDict()
+        if execution_result.result != executor.ER_OK:
+            for s in test.sections(exclude_special=True):
+                self._sections[s.tag] = OrderedDict([("section status",
+                                                      "exec_error")])
+
         t["sections"] = self._sections
 
     def comparison_result(self, expected, got, diffs, matches):
