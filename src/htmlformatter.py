@@ -176,6 +176,9 @@ class HTMLFormatter(JSONFormatter):
             color = "green"
         elif section == "error":
             color = "red"
+        elif section == "exec_error":
+            section = "execution failed"
+            color = "red"
         elif section == "missing":
             color = "orange"
         else:
