@@ -250,6 +250,10 @@ class HTMLFormatter(JSONFormatter):
             total_summary["error"] += 1
             for wrong_line in test["sections"][section]['wrong_lines']:
                 self._print_section_error_message(wrong_line, section)
+        elif test["sections"][section]["section status"] == "exec_error":
+            section_summary[section]["error"] += 1
+            total_summary["error"] += 1
+            self._print_section_exec_error_message(section)
         else:
             section_summary[section]["warning"] += 1
             total_summary["warning"] += 1
