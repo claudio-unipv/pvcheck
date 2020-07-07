@@ -274,6 +274,12 @@ class HTMLFormatter(JSONFormatter):
         print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
 
     @staticmethod
+    def _print_section_exec_error_message(section):
+        msg = _("execution failed")
+        color = "red"
+        print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
+
+    @staticmethod
     def _print_section_warning_message(section):
         msg = _("missing section")
         color = "orange"
