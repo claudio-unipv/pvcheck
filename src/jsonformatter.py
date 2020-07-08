@@ -9,7 +9,7 @@ import formatter
 import executor
 
 
-JSON_FORMAT_VER = "2.1.0"
+JSON_FORMAT_VER = "2.2.0"
 
 
 # TO BE DEFINED
