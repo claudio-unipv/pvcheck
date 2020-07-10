@@ -9,7 +9,7 @@ import formatter
 import executor
 
 
-JSON_FORMAT_VER = "2.1.0"
+JSON_FORMAT_VER = "2.2.0"
 
 
 # TO BE DEFINED
@@ -77,7 +77,7 @@ class JSONFormatter(formatter.Formatter):
         ])
         self._tests.append(t)
 
-    def execution_result(self, cmdline_args, execution_result):
+    def execution_result(self, cmdline_args, execution_result, test):
         t = self._tests[-1]
         info = {
             "progname": cmdline_args[0],
@@ -88,6 +88,11 @@ class JSONFormatter(formatter.Formatter):
         t["error_message"] = msg.format(**info)
         t["output"] = execution_result.output
         self._sections = OrderedDict()
+        if execution_result.result != executor.ER_OK:
+            for s in test.sections(exclude_special=True):
+                self._sections[s.tag] = OrderedDict([("section status",
+                                                      "exec_error")])
+
         t["sections"] = self._sections
 
     def comparison_result(self, expected, got, diffs, matches):

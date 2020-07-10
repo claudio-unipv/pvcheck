@@ -107,10 +107,14 @@ class CSVFormatter(formatter.Formatter):
         ])
         self._tests.append(t)
 
-    def execution_result(self, cmdline_args, execution_result):
+    def execution_result(self, cmdline_args, execution_result, test):
         t = self._tests[-1]
         self._sections = OrderedDict()
         t["status"] = self._RESULT_TABLE[execution_result.result]
+        if execution_result.result != executor.ER_OK:
+            for s in test.sections(exclude_special=True):
+                self._sections[s.tag] = OrderedDict([("equality", "0")])
+
         t["sections"] = self._sections
 
     def comparison_result(self, expected, got, diffs, matches):

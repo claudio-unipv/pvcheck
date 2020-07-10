@@ -176,6 +176,9 @@ class HTMLFormatter(JSONFormatter):
             color = "green"
         elif section == "error":
             color = "red"
+        elif section == "exec_error":
+            section = "execution failed"
+            color = "red"
         elif section == "missing":
             color = "orange"
         else:
@@ -250,6 +253,10 @@ class HTMLFormatter(JSONFormatter):
             total_summary["error"] += 1
             for wrong_line in test["sections"][section]['wrong_lines']:
                 self._print_section_error_message(wrong_line, section)
+        elif test["sections"][section]["section status"] == "exec_error":
+            section_summary[section]["error"] += 1
+            total_summary["error"] += 1
+            self._print_section_exec_error_message(section)
         else:
             section_summary[section]["warning"] += 1
             total_summary["warning"] += 1
@@ -270,6 +277,12 @@ class HTMLFormatter(JSONFormatter):
         else:
             msg = _("line %d is wrong  (expected '%s', got '%s')") % (wrong_line[0] + 1, wrong_line[2],
                                                                       wrong_line[1])
+        color = "red"
+        print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
+
+    @staticmethod
+    def _print_section_exec_error_message(section):
+        msg = _("execution failed")
         color = "red"
         print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
 
