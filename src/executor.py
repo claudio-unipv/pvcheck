@@ -89,6 +89,7 @@ class Executor:
                 proc.stdin.close()
                 proc.stdout.close()
                 proc.stderr.close()
+                proc.wait()
             except FileNotFoundError:
                 er = ER_NOTFILE
         output = outputb.decode('utf-8', errors='ignore')
