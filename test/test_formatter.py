@@ -41,27 +41,27 @@ y
 
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_OK, 0, "", "")
-        f.execution_result(["prog"], res)
+        f.execution_result(["prog"], res, None)
         f.end_test()
         
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_SEGFAULT, -1, "", "")
-        f.execution_result(["prog"], res)
+        f.execution_result(["prog"], res, None)
         f.end_test()
 
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_TIMEOUT, 0, "", "")
-        f.execution_result(["prog"], res)
+        f.execution_result(["prog"], res, None)
         f.end_test()
 
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_ERROR, 42, "", "")
-        f.execution_result(["prog"], res)
+        f.execution_result(["prog"], res, None)
         f.end_test()
 
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_NOTFILE, 1, "", "")
-        f.execution_result(["prog"], res)
+        f.execution_result(["prog"], res, None)
         f.end_test()
         
         f.end_session()
@@ -80,7 +80,7 @@ FAILED TO RUN THE FILE 'prog' (the file does not exist)
 
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_OK, 0, "", "")
-        f.execution_result(["prog"], res)
+        f.execution_result(["prog"], res, None)
         f.missing_section(Section("NOTEXISTING", []))
 
         f.end_session()
@@ -95,7 +95,7 @@ FAILED TO RUN THE FILE 'prog' (the file does not exist)
 
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_OK, 0, "", "")
-        f.execution_result(["prog"], res)
+        f.execution_result(["prog"], res, None)
         f.comparison_result(
             Section("EXPECTED", ["1", "2"]),
             Section("GOT", ["3", "2", "4"]),
@@ -116,7 +116,7 @@ EXPECTED: unexpected line '4'
 
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_OK, 0, "", "")
-        f.execution_result(["prog"], res)
+        f.execution_result(["prog"], res, None)
         f.comparison_result(
             Section("EXPECTED", ["1", "2", "3", "4", "5", "6"]),
             Section("GOT", ["6", "1", "2", "3", "4", "5"]),
@@ -138,7 +138,7 @@ EXPECTED: line 3 is wrong  (expected '3', got '2')
 
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_OK, 0, "", "")
-        f.execution_result(["prog"], res)
+        f.execution_result(["prog"], res, None)
         f.comparison_result(
             Section("EXPECTED", ["1", "2"]),
             Section("GOT", []),
@@ -159,7 +159,7 @@ EXPECTED: missing line (expected '2')
 
         f.begin_test("description", ["abc"], "1\n", "")
         res = executor.ExecResult(executor.ER_OK, 0, "", "")
-        f.execution_result(["prog"], res)
+        f.execution_result(["prog"], res, None)
         f.comparison_result(
             Section("EXPECTED", ["1", "2"]),
             Section("GOT", ["2", "3"]),
