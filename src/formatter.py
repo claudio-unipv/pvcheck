@@ -310,7 +310,7 @@ class TextFormatter(Formatter):
             self.debug(fmt % (prnt(e), prnt(a)))
 
     def missing_section(self, expected):
-        if self._test_status is "ok" or self._test_status is None:
+        if self._test_status != "ok" or self._test_status is None:
             self._test_status = "warning"
         self._sect_results.append((expected.tag, "warning"))
         self.warning(expected.tag + ": " + _("missing section"))
