@@ -179,6 +179,7 @@ _translations = {
         "%(prog)s: error: %(message)s\n": "%(prog)s: errore: %(message)s\n",
         "the following arguments are required: %s": "i seguenti argomenti sono richiesti: %s",
         "usage: ": "utilizzo: ",
+        "number of the test to export as returned by the 'info' command.": "numero del test da salvare come restituito dal comando 'info'."
     }
 }
 

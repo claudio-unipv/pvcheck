@@ -109,7 +109,9 @@ def _initialized_argparser():
     # create the parser for the "export" command
     parser_export = subparsers.add_parser('export', help=_("export in a file the input arguments from the selected "
                                           "test."))
-    parser_export.add_argument("test_number", type=int)
+    parser_export.add_argument("test_number", type=int, help=_("number of the test "
+                                                               "to export as returned "
+                                                               "by the 'info' command."))
     parser_export.add_argument("file", help=_("file containing the tests to be performed."))
     parser_export.set_defaults(config='', timeout=10, verbosity=3, errors=4, color='AUTO', valgrind=False,
                                format='text', log=_DEFAULT_LOG_FILE, test=None, program=None, program_arguments=None,
