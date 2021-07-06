@@ -7,6 +7,19 @@ import executor
 from i18n import translate as _
 
 
+def handle_non_printable_chars(string):
+    if string.isprintable():
+        out_string = string
+    else:
+        out_string = ''
+        for c in string:
+            if c == '\n' or c.isprintable():
+                out_string = ''.join([out_string, c])
+            else:
+                out_string = ''.join([out_string, '<NP>'])
+    return out_string
+
+
 class Formatter:
     """Abstract base class for all the formatters.
 
@@ -143,7 +156,7 @@ class TextFormatter(Formatter):
 
     def fatal(self, text):
         """Write a message with the fatal level."""
-        self._message(self.FATAL, text)
+        self.message(self.FATAL, text)
 
     def _format_section(self, title, content, maxlines=5):
         """Compose a text session.
@@ -271,12 +284,16 @@ class TextFormatter(Formatter):
             for (i, d) in enumerate(diffs):
                 if d <= 0:
                     continue
+                try:
+                    out_string = handle_non_printable_chars(got.content[i])
+                except IndexError:
+                    out_string = ''
                 if matches[i] is None:
-                    msg = err_un % got.content[i]
+                    msg = err_un % out_string
                 elif i >= len(got.content):
                     msg = err_mis % matches[i]
                 else:
-                    msg = err_diff % (i + 1, matches[i], got.content[i])
+                    msg = err_diff % (i + 1, matches[i], out_string)
                 lines.append(expected.tag + ": " + msg)
 
             disp = (len(lines) if self._maxerrors is None
