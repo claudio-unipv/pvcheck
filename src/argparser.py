@@ -9,25 +9,11 @@ def _callable(obj):
 
 
 class ArgParser(argparse.ArgumentParser):
-    def __init__(self,
-                 prog=None,
-                 usage=None,
-                 description=None,
-                 epilog=None,
-                 parents=None,
-                 formatter_class=argparse.HelpFormatter,
-                 prefix_chars='-',
-                 fromfile_prefix_chars=None,
-                 argument_default=None,
-                 conflict_handler='error',
-                 add_help=True,
-                 allow_abbrev=True,
-                 exit_on_error=True):
-        if parents is None:
-            parents = []
-        super().__init__(prog, usage, description, epilog, parents, formatter_class,
-                         prefix_chars, fromfile_prefix_chars, argument_default,
-                         conflict_handler, add_help, allow_abbrev, exit_on_error)
+    def __init__(self, **kwargs):
+        if kwargs.get('parent', None) is None:
+            kwargs['parents'] = []
+
+        super().__init__(**kwargs)
 
     def set_default_subparser(self, name, args=None):
         """
