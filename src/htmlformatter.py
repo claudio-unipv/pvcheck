@@ -1,5 +1,5 @@
 """Formatter producing HTML data"""
-
+import formatter
 from jsonformatter import JSONFormatter
 import i18n
 
@@ -275,8 +275,10 @@ class HTMLFormatter(JSONFormatter):
         elif wrong_line[1] is None:
             msg = _("missing line (expected '%s')") % (wrong_line[2])
         else:
+            out_string = formatter.handle_non_printable_chars(wrong_line[1])
+            out_string = out_string.translate(_trantab)
             msg = _("line %d is wrong  (expected '%s', got '%s')") % (wrong_line[0] + 1, wrong_line[2],
-                                                                      wrong_line[1])
+                                                                      out_string)
         color = "red"
         print('            <b><font color="{}">{}: </b>{}</font><br>'.format(color, section, msg))
 

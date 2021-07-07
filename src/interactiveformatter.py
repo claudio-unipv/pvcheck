@@ -428,18 +428,23 @@ class InteractiveFormatter(formatter.Formatter):
         err_mis = "\t\t(" + _("missing line") + " '%s'"
 
         for (i, d) in enumerate(diffs):
+            try:
+                out_string = formatter.handle_non_printable_chars(got.content[i])
+            except IndexError:
+                out_string = ''
             if d <= 0:
                 # Correct
-                add(got.content[i], curses.color_pair(self.COLOR_OK))
+                add(out_string, curses.color_pair(self.COLOR_OK))
             elif matches[i] is None:
                 # Extra line
-                add(err_un % got.content[i], curses.color_pair(self.COLOR_ERR))
+                add(err_un % out_string, curses.color_pair(self.COLOR_ERR))
             elif i >= len(got.content):
                 # Missing line
                 add(err_mis % matches[i], curses.color_pair(self.COLOR_ERR))
             else:
                 # Mismatching lines
-                add(err_diff % (got.content[i], matches[i]), curses.color_pair(self.COLOR_ERR))
+
+                add(err_diff % (out_string, matches[i]), curses.color_pair(self.COLOR_ERR))
         add("")
         self._update()
 
