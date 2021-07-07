@@ -10,8 +10,7 @@ def _callable(obj):
 
 class ArgParser(argparse.ArgumentParser):
     def __init__(self, **kwargs):
-        if kwargs.get('parent', None) is None:
-            kwargs['parents'] = []
+        kwargs.setdefault('parents', [])
 
         super().__init__(**kwargs)
 
