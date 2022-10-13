@@ -1,18 +1,18 @@
 import unittest
 import sys
-sys.path.insert(0, '../src')
+sys.path.insert(0, '..')
 import io
-from pvcheck import *
-from testdata import *
-import formatter
-import executor
+from pvcheck.pvcheck import *
+from pvcheck.testdata import *
+from pvcheck.formatter import *
+from pvcheck.executor import *
 
 
 class TestPVCheck(unittest.TestCase):
     def test_exec_single_test(self):
         dst = io.StringIO()
-        fmt = formatter.TextFormatter(destination=dst)
-        pv = PvCheck(executor.Executor(), fmt)
+        fmt = TextFormatter(destination=dst)
+        pv = PvCheck(Executor(), fmt)
 
         test = TestCase("echo", [
             Section(".ARGS", ["[OUT]\nfoo"]),
@@ -31,10 +31,10 @@ OUT: OK
 
     def test_exec_suite(self):
         dst = io.StringIO()
-        verb = formatter.TextFormatter.SUCCESS
-        fmt = formatter.TextFormatter(destination=dst,
+        verb = TextFormatter.SUCCESS
+        fmt = TextFormatter(destination=dst,
                                       verbosity=verb)
-        pv = PvCheck(executor.Executor(), fmt)
+        pv = PvCheck(Executor(), fmt)
 
         sections = [
             Section(".TEST", ["echo1"]),

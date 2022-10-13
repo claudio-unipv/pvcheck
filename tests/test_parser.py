@@ -1,7 +1,7 @@
 import unittest
 import sys
-sys.path.insert(0, '../src')
-from parser import *
+sys.path.insert(0, '..')
+from pvcheck.parser import *
 
 
 class TestParser(unittest.TestCase):
