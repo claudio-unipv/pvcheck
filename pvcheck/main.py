@@ -2,24 +2,24 @@
 import argparse
 import sys
 
-from argparser import ArgParser
+from pvcheck.argparser import ArgParser
 import os
 import math
-import pvcheck
-import parser
-import testdata
-import formatter
-import jsonformatter
-import csvformatter
-import htmlformatter
-import interactiveformatter
-import executor
-import valgrind
-import i18n
-import exporter
+import pvcheck.pvcheck
+import pvcheck.parser
+import pvcheck.testdata
+import pvcheck.formatter
+import pvcheck.jsonformatter
+import pvcheck.csvformatter
+import pvcheck.htmlformatter
+import pvcheck.interactiveformatter
+import pvcheck.executor
+import pvcheck.valgrind
+import pvcheck.i18n
+import pvcheck.exporter
 
 
-_ = i18n.translate
+_ = pvcheck.i18n.translate
 _DEFAULT_LOG_FILE = os.path.expanduser("~/.pvcheck.log")
 
 

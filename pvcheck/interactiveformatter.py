@@ -4,12 +4,12 @@
 
 import curses
 import threading
-import formatter
-import executor
+import pvcheck.formatter
+import pvcheck.executor
 import functools
-import i18n
+import pvcheck.i18n
 
-_ = i18n.translate
+_ = pvcheck.i18n.translate
 
 
 # TODO: i18n
@@ -93,7 +93,7 @@ Controlli tramite tastiera
 """
 
 
-i18n.register_translation(HELP_MESSAGE, "it", HELP_MESSAGE_IT)
+pvcheck.i18n.register_translation(HELP_MESSAGE, "it", HELP_MESSAGE_IT)
 
 
 _CALLBACKS = {}
@@ -121,7 +121,7 @@ def _synchronized(f):
     return decorated
 
 
-class InteractiveFormatter(formatter.Formatter):
+class InteractiveFormatter(pvcheck.formatter.Formatter):
     """Formatter that uses curses to report the result."""
 
     FOOTER_H = 2  # height of the footer
@@ -132,12 +132,12 @@ class InteractiveFormatter(formatter.Formatter):
     COLOR_ERR = 3
 
     _RESULT_TABLE = {
-        executor.ER_OK: None,
-        executor.ER_TIMEOUT: _("TIMEOUT EXPIRED: PROCESS TERMINATED"),
-        executor.ER_OUTPUT_LIMIT: _("TOO MANY OUTPUT LINES"),
-        executor.ER_SEGFAULT: _("PROCESS ENDED WITH A FAILURE (SEGMENTATION FAULT)"),
-        executor.ER_ERROR: ("PROCESS ENDED WITH A FAILURE (ERROR CODE {status})"),
-        executor.ER_NOTFILE: _("FAILED TO RUN THE FILE '{progname}' the file does not exist)")
+        pvcheck.executor.ER_OK: None,
+        pvcheck.executor.ER_TIMEOUT: _("TIMEOUT EXPIRED: PROCESS TERMINATED"),
+        pvcheck.executor.ER_OUTPUT_LIMIT: _("TOO MANY OUTPUT LINES"),
+        pvcheck.executor.ER_SEGFAULT: _("PROCESS ENDED WITH A FAILURE (SEGMENTATION FAULT)"),
+        pvcheck.executor.ER_ERROR: ("PROCESS ENDED WITH A FAILURE (ERROR CODE {status})"),
+        pvcheck.executor.ER_NOTFILE: _("FAILED TO RUN THE FILE '{progname}' the file does not exist)")
     }
 
     def __init__(self):

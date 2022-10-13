@@ -1,9 +1,9 @@
 """ArgumentParser with Italian translation."""
 
 import argparse
-import i18n
+import pvcheck.i18n
 import sys
-_ = i18n.translate
+_ = pvcheck.i18n.translate
 
 
 def _callable(obj):

@@ -3,9 +3,9 @@
 import sys
 import csv
 from collections import OrderedDict
-import formatter
-import executor
-from i18n import translate as _
+import pvcheck.formatter
+import pvcheck.executor
+from pvcheck.i18n import translate as _
 
 # TO BE DEFINED
 # - wrong lines
@@ -13,15 +13,15 @@ from i18n import translate as _
 # - difference/similarity
 
 
-class CSVFormatter(formatter.Formatter):
+class CSVFormatter(pvcheck.formatter.Formatter):
     _RESULT_TABLE = {
-        executor.ER_OK: "0",
-        executor.ER_TIMEOUT: "1",
-        executor.ER_SEGFAULT:
+        pvcheck.executor.ER_OK: "0",
+        pvcheck.executor.ER_TIMEOUT: "1",
+        pvcheck.executor.ER_SEGFAULT:
         "2",
-        executor.ER_ERROR:
+        pvcheck.executor.ER_ERROR:
         "3",
-        executor.ER_NOTFILE:
+        pvcheck.executor.ER_NOTFILE:
         "4"
     }
 

@@ -1,7 +1,7 @@
 """Parse text representing sections."""
 
 import re
-import testdata
+import pvcheck.testdata
 
 
 # Any character is allowed before '[', otherwise the header will be

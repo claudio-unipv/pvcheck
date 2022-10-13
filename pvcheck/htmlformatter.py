@@ -1,10 +1,10 @@
 """Formatter producing HTML data"""
 
-from jsonformatter import JSONFormatter
-import i18n
+from pvcheck.jsonformatter import JSONFormatter
+import pvcheck.i18n
 
 
-_ = i18n.translate
+_ = pvcheck.i18n.translate
 _trans_dic = {"\n": "<br>", "–": "&ndash;", "—": "&mdash;", "&": "&amp;", ">": "&gt;", "<": "&lt;"}
 _trantab = str.maketrans(_trans_dic)
 

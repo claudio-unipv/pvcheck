@@ -2,7 +2,7 @@
 
 from collections import OrderedDict
 from itertools import chain
-from i18n import translate as _
+from pvcheck.i18n import translate as _
 
 
 class Section:

@@ -4,10 +4,10 @@ import os
 import json
 import datetime
 
-import match
-import parser
-import executor
-from i18n import translate as _
+import pvcheck.match
+import pvcheck.parser
+import pvcheck.executor
+from pvcheck.i18n import translate as _
 
 
 class PvCheck:

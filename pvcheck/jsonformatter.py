@@ -5,8 +5,8 @@ import json
 import datetime
 from collections import OrderedDict
 from itertools import zip_longest
-import formatter
-import executor
+import pvcheck.formatter
+import pvcheck.executor
 
 
 JSON_FORMAT_VER = "2.2.0"
@@ -18,16 +18,16 @@ JSON_FORMAT_VER = "2.2.0"
 # - difference/similarity
 
 
-class JSONFormatter(formatter.Formatter):
+class JSONFormatter(pvcheck.formatter.Formatter):
     _RESULT_TABLE = {
-        executor.ER_OK: "ok",
-        executor.ER_TIMEOUT: "TIMEOUT EXPIRED: PROCESS TERMINATED",
-        executor.ER_OUTPUT_LIMIT: "TOO MANY OUTPUT LINES",
-        executor.ER_SEGFAULT:
+        pvcheck.executor.ER_OK: "ok",
+        pvcheck.executor.ER_TIMEOUT: "TIMEOUT EXPIRED: PROCESS TERMINATED",
+        pvcheck.executor.ER_OUTPUT_LIMIT: "TOO MANY OUTPUT LINES",
+        pvcheck.executor.ER_SEGFAULT:
         "PROCESS ENDED WITH A FAILURE (SEGMENTATION FAULT)",
-        executor.ER_ERROR:
+        pvcheck.executor.ER_ERROR:
         "PROCESS ENDED WITH A FAILURE (ERROR CODE {status})",
-        executor.ER_NOTFILE:
+        pvcheck.executor.ER_NOTFILE:
         "FAILED TO RUN THE FILE '{progname}' (the file does not exist)"
     }
 
