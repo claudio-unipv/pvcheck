@@ -111,7 +111,7 @@ class CSVFormatter(pvcheck.formatter.Formatter):
         t = self._tests[-1]
         self._sections = OrderedDict()
         t["status"] = self._RESULT_TABLE[execution_result.result]
-        if execution_result.result != executor.ER_OK:
+        if execution_result.result != pvcheck.executor.ER_OK:
             for s in test.sections(exclude_special=True):
                 self._sections[s.tag] = OrderedDict([("equality", "0")])
 

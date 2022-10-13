@@ -394,7 +394,7 @@ class InteractiveFormatter(pvcheck.formatter.Formatter):
             'status': execution_result.status
         }
         message = self._RESULT_TABLE[execution_result.result]
-        if execution_result.result != executor.ER_OK:
+        if execution_result.result != pvcheck.executor.ER_OK:
             self._err_count += 1
             message = message.format(**info)
             for line in message.splitlines():

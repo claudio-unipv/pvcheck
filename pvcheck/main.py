@@ -139,7 +139,7 @@ def parse_file(filename):
         return []
     try:
         with open(filename, "rt") as f:
-            return list(parser.parse_sections(f))
+            return list(pvcheck.parser.parse_sections(f))
     except FileNotFoundError as e:
         print(e)
         sys.exit(1)
@@ -177,16 +177,16 @@ def main():
 
     if opts["list"]:
         td = parse_file(args["test_file"])
-        suite = testdata.TestSuite(cfg + td)
+        suite = pvcheck.testdata.TestSuite(cfg + td)
         print_test_names_list(suite)
         exit(0)
 
     td = parse_file(args["test_file"])
 
     if opts['valgrind']:
-        cfg.append(testdata.Section('VALGRIND', []))
+        cfg.append(pvcheck.testdata.Section('VALGRIND', []))
 
-    suite = testdata.TestSuite(cfg + td)
+    suite = pvcheck.testdata.TestSuite(cfg + td)
 
     if opts['run'] is not None and opts['export'] is None:
         single_test_index = opts['run'] - 1
@@ -195,23 +195,23 @@ def main():
     if opts['export'] is not None:
         single_test_index = opts['export'] - 1
         suite = suite.test_case(single_test_index)
-        exporter.export(suite, single_test_index)
+        pvcheck.exporter.export(suite, single_test_index)
 
-    execlass = (valgrind.ValgrindExecutor if opts["valgrind"]
-                else executor.Executor)
+    execlass = (pvcheck.valgrind.ValgrindExecutor if opts["valgrind"]
+                else pvcheck.executor.Executor)
     exe = execlass()
 
     if opts["format"] == "interactive":
-        fmt = interactiveformatter.InteractiveFormatter()
+        fmt = pvcheck.interactiveformatter.InteractiveFormatter()
     elif opts["format"] == "json":
-        fmt = jsonformatter.JSONFormatter(indent=4, test_file=args["test_file"])
+        fmt = pvcheck.jsonformatter.JSONFormatter(indent=4, test_file=args["test_file"])
     elif opts["format"] == "csv":
-        fmt = csvformatter.CSVFormatter()
+        fmt = pvcheck.csvformatter.CSVFormatter()
     elif opts["format"] == "html":
-        fmt = htmlformatter.HTMLFormatter()
+        fmt = pvcheck.htmlformatter.HTMLFormatter()
     elif opts["format"] == "text":
-        fmtclass = (formatter.ColoredTextFormatter if opts["color"]
-                    else formatter.TextFormatter)
+        fmtclass = (pvcheck.formatter.ColoredTextFormatter if opts["color"]
+                    else pvcheck.formatter.TextFormatter)
         fmt = fmtclass(verbosity=opts["verbosity"],
                        maxerrors=opts["maxerrors"])
     else:
@@ -224,10 +224,10 @@ def main():
         program.extend(args['program_arguments'])
 
     with open(opts["logfile"], "at") as logfile:
-        logfmt = jsonformatter.JSONFormatter(logfile,
+        logfmt = pvcheck.jsonformatter.JSONFormatter(logfile,
                                              test_file=args["test_file"])
-        combfmt = formatter.CombinedFormatter([fmt, logfmt])
-        pvc = pvcheck.PvCheck(exe, combfmt)
+        combfmt = pvcheck.formatter.CombinedFormatter([fmt, logfmt])
+        pvc = pvcheck.pvcheck.PvCheck(exe, combfmt)
         try:
             if single_test_index is None:
                 failures = pvc.exec_suite(suite, program,

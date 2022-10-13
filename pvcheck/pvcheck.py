@@ -70,7 +70,7 @@ class PvCheck:
             output_limit=output_limit
         )
         self._fmt.execution_result(args, exec_result, test)
-        if exec_result.result == executor.ER_OK:
+        if exec_result.result == pvcheck.executor.ER_OK:
             return self._check_output(test, exec_result.output)
         else:
             return False
@@ -78,13 +78,13 @@ class PvCheck:
     def _check_output(self, test, output):
         # Return True if the test has been passed.
         success = True
-        answers = list(parser.parse_sections(output.splitlines()))
+        answers = list(pvcheck.parser.parse_sections(output.splitlines()))
         for s in test.sections(exclude_special=True):
             for ans in answers:
                 if ans.tag != s.tag:
                     continue
                 ordered = ("unordered" not in test.section_options(s.tag))
-                diffs, matches = match.compare_sections(
+                diffs, matches = pvcheck.match.compare_sections(
                     ans.content, s.content, ordered=ordered
                 )
                 self._fmt.comparison_result(s, ans, diffs,

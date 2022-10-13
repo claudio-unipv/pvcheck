@@ -204,7 +204,7 @@ class TextFormatter(Formatter):
         self._testcount = 0
 
     def _proc_args(self, args):
-        return [(a if a is not executor.ARG_TMPFILE
+        return [(a if a is not pvcheck.executor.ARG_TMPFILE
                  else _("<temp.file>"))
                 for a in args]
 

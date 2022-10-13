@@ -49,7 +49,7 @@ class JSONFormatter(pvcheck.formatter.Formatter):
         return "%s.%03d" % (dt, int(micro) / 1000)
 
     def _proc_args(self, args):
-        return [(a if a is not executor.ARG_TMPFILE
+        return [(a if a is not pvcheck.executor.ARG_TMPFILE
                  else "<temp.file>")
                 for a in args]
     
@@ -88,7 +88,7 @@ class JSONFormatter(pvcheck.formatter.Formatter):
         t["error_message"] = msg.format(**info)
         t["output"] = execution_result.output
         self._sections = OrderedDict()
-        if execution_result.result != executor.ER_OK:
+        if execution_result.result != pvcheck.executor.ER_OK:
             for s in test.sections(exclude_special=True):
                 self._sections[s.tag] = OrderedDict([("section status",
                                                       "exec_error")])
