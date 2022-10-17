@@ -1,7 +1,7 @@
 import unittest
 import sys
-sys.path.insert(0, '../src')
-from testdata import *
+sys.path.insert(0, '..')
+from pvcheck.testdata import *
 
 
 class TestSection(unittest.TestCase):

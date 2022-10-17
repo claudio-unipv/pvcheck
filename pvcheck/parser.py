@@ -1,7 +1,7 @@
 """Parse text representing sections."""
 
 import re
-import testdata
+import pvcheck.testdata
 
 
 # Any character is allowed before '[', otherwise the header will be
@@ -39,11 +39,11 @@ def parse_sections(f):
         m = _RE_HEADER.match(line)
         if m:
             if tag != "" or len(content) > 0:
-                yield testdata.Section(tag, content)
+                yield pvcheck.testdata.Section(tag, content)
             # A new section
             tag = m.group("tag")
             content = []
         else:
             content.append(line.rstrip())
     if tag != "" or len(content) > 0:
-        yield testdata.Section(tag, content)
+        yield pvcheck.testdata.Section(tag, content)

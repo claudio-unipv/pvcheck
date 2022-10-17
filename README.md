@@ -17,8 +17,7 @@ Installation
 To install pvcheck:
 
 ```
-cd pvcheck
-make
+pip install pvcheck
 ```
 
 To compile all the sample programs:

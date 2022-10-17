@@ -1,10 +1,10 @@
 import unittest
 import sys
-sys.path.insert(0, '../src')
+sys.path.insert(0, '..')
 import io
-from formatter import *
-from testdata import Section
-import executor
+from pvcheck.formatter import *
+from pvcheck.testdata import Section
+from pvcheck.executor import *
 
 
 class TestTextFormatter(unittest.TestCase):
@@ -40,27 +40,27 @@ y
         f.begin_session()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_OK, 0, "", "")
+        res = ExecResult(ER_OK, 0, "", "")
         f.execution_result(["prog"], res, None)
         f.end_test()
         
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_SEGFAULT, -1, "", "")
+        res = ExecResult(ER_SEGFAULT, -1, "", "")
         f.execution_result(["prog"], res, None)
         f.end_test()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_TIMEOUT, 0, "", "")
+        res = ExecResult(ER_TIMEOUT, 0, "", "")
         f.execution_result(["prog"], res, None)
         f.end_test()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_ERROR, 42, "", "")
+        res = ExecResult(ER_ERROR, 42, "", "")
         f.execution_result(["prog"], res, None)
         f.end_test()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_NOTFILE, 1, "", "")
+        res = ExecResult(ER_NOTFILE, 1, "", "")
         f.execution_result(["prog"], res, None)
         f.end_test()
         
@@ -79,7 +79,7 @@ FAILED TO RUN THE FILE 'prog' (the file does not exist)
         f.begin_session()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_OK, 0, "", "")
+        res = ExecResult(ER_OK, 0, "", "")
         f.execution_result(["prog"], res, None)
         f.missing_section(Section("NOTEXISTING", []))
 
@@ -94,7 +94,7 @@ FAILED TO RUN THE FILE 'prog' (the file does not exist)
         f.begin_session()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_OK, 0, "", "")
+        res = ExecResult(ER_OK, 0, "", "")
         f.execution_result(["prog"], res, None)
         f.comparison_result(
             Section("EXPECTED", ["1", "2"]),
@@ -115,7 +115,7 @@ EXPECTED: unexpected line '4'
         f.begin_session()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_OK, 0, "", "")
+        res = ExecResult(ER_OK, 0, "", "")
         f.execution_result(["prog"], res, None)
         f.comparison_result(
             Section("EXPECTED", ["1", "2", "3", "4", "5", "6"]),
@@ -137,7 +137,7 @@ EXPECTED: line 3 is wrong  (expected '3', got '2')
         f.begin_session()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_OK, 0, "", "")
+        res = ExecResult(ER_OK, 0, "", "")
         f.execution_result(["prog"], res, None)
         f.comparison_result(
             Section("EXPECTED", ["1", "2"]),
@@ -158,7 +158,7 @@ EXPECTED: missing line (expected '2')
         f.begin_session()
 
         f.begin_test("description", ["abc"], "1\n", "")
-        res = executor.ExecResult(executor.ER_OK, 0, "", "")
+        res = ExecResult(ER_OK, 0, "", "")
         f.execution_result(["prog"], res, None)
         f.comparison_result(
             Section("EXPECTED", ["1", "2"]),

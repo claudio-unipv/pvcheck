@@ -3,9 +3,9 @@
 import sys
 import csv
 from collections import OrderedDict
-import formatter
-import executor
-from i18n import translate as _
+import pvcheck.formatter
+import pvcheck.executor
+from pvcheck.i18n import translate as _
 
 # TO BE DEFINED
 # - wrong lines
@@ -13,15 +13,15 @@ from i18n import translate as _
 # - difference/similarity
 
 
-class CSVFormatter(formatter.Formatter):
+class CSVFormatter(pvcheck.formatter.Formatter):
     _RESULT_TABLE = {
-        executor.ER_OK: "0",
-        executor.ER_TIMEOUT: "1",
-        executor.ER_SEGFAULT:
+        pvcheck.executor.ER_OK: "0",
+        pvcheck.executor.ER_TIMEOUT: "1",
+        pvcheck.executor.ER_SEGFAULT:
         "2",
-        executor.ER_ERROR:
+        pvcheck.executor.ER_ERROR:
         "3",
-        executor.ER_NOTFILE:
+        pvcheck.executor.ER_NOTFILE:
         "4"
     }
 
@@ -31,7 +31,7 @@ class CSVFormatter(formatter.Formatter):
         self._tests = []
         
     def _proc_args(self, args):
-        return [(a if a is not executor.ARG_TMPFILE
+        return [(a if a is not pvcheck.executor.ARG_TMPFILE
                  else "<temp.file>")
                 for a in args]
 
@@ -111,7 +111,7 @@ class CSVFormatter(formatter.Formatter):
         t = self._tests[-1]
         self._sections = OrderedDict()
         t["status"] = self._RESULT_TABLE[execution_result.result]
-        if execution_result.result != executor.ER_OK:
+        if execution_result.result != pvcheck.executor.ER_OK:
             for s in test.sections(exclude_special=True):
                 self._sections[s.tag] = OrderedDict([("equality", "0")])
 

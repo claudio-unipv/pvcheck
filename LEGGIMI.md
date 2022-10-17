@@ -13,7 +13,7 @@ Ad esempio, dopo aver compilato l'esempio 'program.c', è possibile
 provare lo script digitando il comando:
 
 ```
-./pvcheck esempio.test ./program 3
+pvcheck -f esempio.test ./program 3
 ```
 
 dove "3" è un argomento da passare a 'program' (il programma
@@ -25,8 +25,8 @@ script.
 uno stesso file (una "suite" di test):
 
 ```
-./pvcheck esempio2.test ./program2
-```    
+pvcheck -f esempio2.test ./program2
+```
 
 Il formato del file di test è abbastanza semplice.  I file di
 esempio contiene dei commenti che lo descrivono brevemente.

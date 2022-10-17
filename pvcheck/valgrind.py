@@ -1,9 +1,9 @@
 """Executor using the valgrind memory checker tool."""
 
-import executor
+import pvcheck.executor
 
 
-class ValgrindExecutor(executor.Executor):
+class ValgrindExecutor(pvcheck.executor.Executor):
     """Executor that uses valgrind to check the memory usage.
     
     Output from valgrind is detected and used to form a new 'VALGRIND'

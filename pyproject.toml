@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "pvcheck"
+version = "0.1.6"
+description = "Perform automatic tests of the output produced by command line programs"
+authors = [
+    "Claudio Cusano <claudio.cusano@unipv.it>"
+]
+maintainers = [
+    "Claudio Cusano <claudio.cusano@unipv.it>",
+    "Tullio Facchinetti <tullio.facchinetti@unipv.it>"
+]
+readme = "README.md"
+keywords = [
+    "testing"
+]
+
+
+[tool.poetry.scripts]
+pvcheck = 'pvcheck.main:main'
+
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

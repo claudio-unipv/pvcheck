@@ -1,7 +1,7 @@
 import unittest
 import sys
-sys.path.insert(0, '../src')
-from match import *
+sys.path.insert(0, '..')
+from pvcheck.match import *
 
 class TestOrderedComparisons(unittest.TestCase):
     def test_compare_sections1(self):

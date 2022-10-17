@@ -3,8 +3,8 @@
 import sys
 from itertools import zip_longest
 from collections import defaultdict
-import executor
-from i18n import translate as _
+import pvcheck.executor
+from pvcheck.i18n import translate as _
 
 
 def handle_non_printable_chars(string):
@@ -85,18 +85,18 @@ class TextFormatter(Formatter):
     FATAL = -1
 
     _RESULT_TABLE = {
-        executor.ER_OK: (DEBUG, []),
-        executor.ER_TIMEOUT:
+        pvcheck.executor.ER_OK: (DEBUG, []),
+        pvcheck.executor.ER_TIMEOUT:
         (ERROR, [_("TIMEOUT EXPIRED: PROCESS TERMINATED")]),
-        executor.ER_OUTPUT_LIMIT:
+        pvcheck.executor.ER_OUTPUT_LIMIT:
         (ERROR, [_("TOO MANY OUTPUT LINES")]),
-        executor.ER_SEGFAULT:
+        pvcheck.executor.ER_SEGFAULT:
         (ERROR, [_("PROCESS ENDED WITH A FAILURE"),
                  _("(SEGMENTATION FAULT)")]),
-        executor.ER_ERROR:
+        pvcheck.executor.ER_ERROR:
         (ERROR, [_("PROCESS ENDED WITH A FAILURE"),
                  _("(ERROR CODE {status})")]),
-        executor.ER_NOTFILE:
+        pvcheck.executor.ER_NOTFILE:
         (ERROR, [_("FAILED TO RUN THE FILE '{progname}'"),
                  _("(the file does not exist)")])
     }
@@ -217,7 +217,7 @@ class TextFormatter(Formatter):
         self._testcount = 0
 
     def _proc_args(self, args):
-        return [(a if a is not executor.ARG_TMPFILE
+        return [(a if a is not pvcheck.executor.ARG_TMPFILE
                  else _("<temp.file>"))
                 for a in args]
 

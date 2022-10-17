@@ -1,7 +1,7 @@
 import unittest
 import sys
-sys.path.insert(0, '../src')
-from executor import *
+sys.path.insert(0, '..')
+from pvcheck.executor import *
 
 
 class TestExecutor(unittest.TestCase):

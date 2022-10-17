@@ -1,4 +1,4 @@
-from i18n import translate as _
+from pvcheck.i18n import translate as _
 
 
 def export(test, test_index):
