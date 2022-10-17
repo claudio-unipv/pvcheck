@@ -27,6 +27,7 @@ class ArgParser(argparse.ArgumentParser):
                  add_help=True):
         object.__init__(self)
         self.set_default_subparser
+        self.exit_on_error = True
         if version is not None:
             import warnings
             warnings.warn(
